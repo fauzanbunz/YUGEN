@@ -216,62 +216,66 @@
     </div>
 
     <!-- SCREEN 2: CHARACTER SELECT -->
-    <div id="screen-char-select" class="absolute inset-0 hidden flex-col items-center justify-center z-40 p-8">
+    <div id="screen-char-select" class="absolute inset-0 hidden flex-col items-center justify-center z-40 p-8 overflow-hidden">
+        
+        <!-- FIGURE PREVIEW (Slides from left) -->
+        <img id="char-figure-preview" src="" class="absolute bottom-0 left-0 h-[90vh] object-contain opacity-0 -translate-x-24 transition-all duration-500 ease-out drop-shadow-[0_0_30px_rgba(255,0,0,0.9)] pointer-events-none z-10" alt="">
+
         <div class="relative z-20 flex flex-col items-center w-full">
-            <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 border-b border-red-500 pb-2">SELECT LEADER</h2>
+            <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 border-b border-red-500 pb-2 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">SELECT LEADER</h2>
             
             <div class="flex flex-wrap justify-center gap-6 max-w-6xl">
                 <!-- Char 1 -->
-                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('ARAGAMI')">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,51,51,0.8)] transition-all duration-300 shadow-lg">
+                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('ARAGAMI')" onmouseenter="previewChar('ARAGAMI')" onmouseleave="clearPreview()">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
                         <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Aragami.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
-                            <p class="font-bold tracking-widest text-xs">ARAGAMI.chr</p>
-                            <p class="text-[10px] text-red-400 tech-font">FIRE / WIND</p>
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
+                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">ARAGAMI.chr</p>
+                            <p class="text-[10px] text-gray-400 tech-font">FIRE / WIND</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Char 2 -->
-                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('EIGETSU')">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,51,51,0.8)] transition-all duration-300 shadow-lg">
+                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('EIGETSU')" onmouseenter="previewChar('EIGETSU')" onmouseleave="clearPreview()">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
                         <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Eigetsu.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
-                            <p class="font-bold tracking-widest text-xs">EIGETSU.chr</p>
-                            <p class="text-[10px] text-red-400 tech-font">WATER / LIGHT</p>
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
+                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">EIGETSU.chr</p>
+                            <p class="text-[10px] text-gray-400 tech-font">WATER / LIGHT</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Char 3 -->
-                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('HAKUREI')">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,51,51,0.8)] transition-all duration-300 shadow-lg">
+                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('HAKUREI')" onmouseenter="previewChar('HAKUREI')" onmouseleave="clearPreview()">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
                         <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Hakurei.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
-                            <p class="font-bold tracking-widest text-xs">HAKUREI.chr</p>
-                            <p class="text-[10px] text-red-400 tech-font">LIGHT / VOID</p>
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
+                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">HAKUREI.chr</p>
+                            <p class="text-[10px] text-gray-400 tech-font">LIGHT / VOID</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Char 4 -->
-                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('KOKUYO')">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,51,51,0.8)] transition-all duration-300 shadow-lg">
+                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('KOKUYO')" onmouseenter="previewChar('KOKUYO')" onmouseleave="clearPreview()">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
                         <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Kokuyo.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
-                            <p class="font-bold tracking-widest text-xs">KOKUYO.chr</p>
-                            <p class="text-[10px] text-red-400 tech-font">FIRE / DARK</p>
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
+                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">KOKUYO.chr</p>
+                            <p class="text-[10px] text-gray-400 tech-font">FIRE / DARK</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Char 5 -->
-                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('MUKU')">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,51,51,0.8)] transition-all duration-300 shadow-lg">
+                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('MUKU')" onmouseenter="previewChar('MUKU')" onmouseleave="clearPreview()">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
                         <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Muku.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
-                            <p class="font-bold tracking-widest text-xs">MUKU.chr</p>
-                            <p class="text-[10px] text-red-400 tech-font">EARTH / WATER</p>
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
+                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">MUKU.chr</p>
+                            <p class="text-[10px] text-gray-400 tech-font">EARTH / WATER</p>
                         </div>
                     </div>
                 </div>
@@ -479,6 +483,21 @@
 
         // Utility: Wait
         const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        function previewChar(charId) {
+            const preview = document.getElementById('char-figure-preview');
+            // Ubah format string untuk disesuaikan dengan nama file figur (contoh: ARAGAMI -> Aragami)
+            const formattedName = charId.charAt(0).toUpperCase() + charId.slice(1).toLowerCase();
+            preview.src = `https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${formattedName}_figur.png`;
+            preview.classList.remove('opacity-0', '-translate-x-24');
+            preview.classList.add('opacity-100', 'translate-x-12'); // Meluncur ke kanan
+        }
+
+        function clearPreview() {
+            const preview = document.getElementById('char-figure-preview');
+            preview.classList.remove('opacity-100', 'translate-x-12');
+            preview.classList.add('opacity-0', '-translate-x-24'); // Kembali sembunyi
+        }
 
         function switchScreen(screenId) {
             if(screenId === 'screen-game') {
@@ -926,50 +945,67 @@
         const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
         const fontSize = 64; // Huruf Besar & Diperbesar
         
-        class MatrixDrop {
+        class MatrixChar {
             constructor() {
-                this.reset();
-                this.y = Math.random() * -matrixCanvas.height * 2; 
+                this.reset(true); 
             }
-            reset() {
-                this.x = Math.random() * matrixCanvas.width;
-                this.y = -(Math.random() * 500 + 100);
-                this.speed = Math.random() * 1.5 + 0.5; // Jatuh lambat
-                this.length = Math.floor(Math.random() * 3) + 2; // Untaian pendek, terlihat seperti huruf putus-putus
+            reset(randomStart = false) {
+                // Koordinat acak di seluruh layar
+                this.x = Math.random() * (matrixCanvas.width - fontSize);
+                this.y = Math.random() * (matrixCanvas.height - fontSize) + fontSize;
+                
+                // Huruf acak
+                this.char = katakana.charAt(Math.floor(Math.random() * katakana.length));
+                
+                // Transparansi dan kecepatan pudar
+                this.opacity = randomStart ? Math.random() * 0.4 : 0;
+                this.fadeSpeed = Math.random() * 0.01 + 0.005; // Kecepatan muncul/hilangnya huruf
+                this.maxOpacity = Math.random() * 0.3 + 0.15; // Tidak terlalu tebal (0.15 - 0.45 opacity)
+                
+                // Status awal (FADE_IN, FADE_OUT, atau WAIT)
+                this.state = randomStart && Math.random() > 0.5 ? 'FADE_OUT' : 'FADE_IN';
+                this.delay = Math.floor(Math.random() * 150) + 50; // Jeda (jarang) sebelum respawn di tempat baru
             }
             update() {
-                this.y += this.speed;
-                if (this.y > matrixCanvas.height + this.length * fontSize) {
-                    if (Math.random() > 0.98) { // Jarang respawn agar tersebar (sparse)
-                        this.reset();
+                if (this.state === 'FADE_IN') {
+                    this.opacity += this.fadeSpeed;
+                    if (this.opacity >= this.maxOpacity) {
+                        this.state = 'FADE_OUT';
+                    }
+                } else if (this.state === 'FADE_OUT') {
+                    this.opacity -= this.fadeSpeed;
+                    if (this.opacity <= 0) {
+                        this.opacity = 0;
+                        this.state = 'WAIT';
+                    }
+                } else if (this.state === 'WAIT') {
+                    this.delay--;
+                    if (this.delay <= 0) {
+                        this.reset(); // Muncul lagi di posisi baru
                     }
                 }
             }
             draw() {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; // Merah transparan
-                ctx.font = 'bold ' + fontSize + 'px monospace';
-                for (let i = 0; i < this.length; i++) {
-                    let charY = this.y - (i * fontSize);
-                    if (charY > 0 && charY < matrixCanvas.height + fontSize) {
-                        const text = katakana.charAt(Math.floor(Math.random() * katakana.length));
-                        ctx.fillText(text, this.x, charY);
-                    }
+                if (this.opacity > 0) {
+                    ctx.fillStyle = `rgba(255, 0, 0, ${this.opacity})`;
+                    ctx.font = 'bold ' + fontSize + 'px monospace';
+                    ctx.fillText(this.char, this.x, this.y);
                 }
             }
         }
 
-        // Hitung jumlah drop menjadi sangat sedikit (agar random dan jarang)
-        const dropsCount = Math.floor(window.innerWidth / 200); 
-        let matrixDrops = [];
-        for(let i=0; i<dropsCount; i++) {
-            matrixDrops.push(new MatrixDrop());
+        // Jumlah huruf yang muncul di layar dalam satu waktu dibuat sedikit (12 huruf) agar terkesan jarang dan estetik
+        const charCount = 12; 
+        let matrixChars = [];
+        for(let i=0; i<charCount; i++) {
+            matrixChars.push(new MatrixChar());
         }
 
         function drawMatrix() {
             ctx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-            matrixDrops.forEach(drop => {
-                drop.update();
-                drop.draw();
+            matrixChars.forEach(c => {
+                c.update();
+                c.draw();
             });
             requestAnimationFrame(drawMatrix);
         }
