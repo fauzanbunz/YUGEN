@@ -1,1 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUGEN Card Battle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0f0f13;
+            color: #e2e8f0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .tech-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Health Bar Barcode Style */
+        .barcode-health {
+            display: flex;
+            height: 12px;
+            gap: 2px;
+            background: #111;
+            padding: 2px;
+            border: 1px solid #333;
+        }
+        .barcode-segment {
+            flex: 1;
+            background-color: #ff3333;
+            transition: all 0.3s;
+        }
+        .barcode-segment.empty {
+            background-color: #222;
+        }
+
+        /* Card Flip Container */
+        .slot-container {
+            width: 90px;
+            height: 130px;
+            perspective: 1000px; /* Gives 3D depth */
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .empty-slot {
+            border: 1px dashed #555;
+            background-color: rgba(255,255,255,0.02);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .empty-slot.highlight {
+            border-color: #ff3333;
+            background-color: rgba(255, 51, 51, 0.1);
+        }
+
+        /* The actual flipping card */
+        .playing-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        /* Face up states */
+        .playing-card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Card Faces */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+
+        /* Back of the card */
+        .card-face-back {
+            background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Front of the card */
+        .card-face-front {
+            background-color: #1a1a24;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .playing-card:hover:not(.is-flipped) .card-face-back {
+            border-color: #ff3333;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+        }
+        .playing-card:hover .card-face-front {
+            border-color: #ff3333;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+        }
+        
+        .slot-container.selected {
+            transform: translateY(-15px);
+            z-index: 50;
+        }
+        .slot-container.selected .card-face-front {
+            border-color: #ff3333;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
+        }
+        
+        .card-inner-img {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%);
+        }
+        
+        .card-stats {
+            height: 24px;
+            background-color: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-top: 1px solid #444;
+        }
+
+        /* Animations */
+        @keyframes dealCard {
+            0% { opacity: 0; transform: translateY(100px) scale(0.5) rotateX(-45deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
+        }
+        @keyframes dealEnemyCard {
+            0% { opacity: 0; transform: translateY(-100px) scale(0.5) rotateX(45deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
+        }
+        
+        @keyframes attackUp {
+            0% { transform: rotateY(180deg) translateY(0); }
+            50% { transform: rotateY(180deg) translateY(-40px) scale(1.1); z-index: 20; }
+            100% { transform: rotateY(180deg) translateY(0); z-index: 1;}
+        }
+        
+        @keyframes attackDown {
+            0% { transform: rotateY(180deg) translateY(0); }
+            50% { transform: rotateY(180deg) translateY(40px) scale(1.1); z-index: 20; }
+            100% { transform: rotateY(180deg) translateY(0); z-index: 1;}
+        }
+        
+        @keyframes damageShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .anim-deal { animation: dealCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .anim-deal-enemy { animation: dealEnemyCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .anim-shake { animation: damageShake 0.4s; border-color: red !important; box-shadow: 0 0 20px red !important; }
+        
+        .tech-borders {
+            position: relative;
+        }
+        .tech-borders::before, .tech-borders::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 1px solid #ff3333;
+        }
+        .tech-borders::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .tech-borders::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen w-screen relative">
+
+    <!-- MATRIX CANVAS BACKGROUND -->
+    <canvas id="matrix-bg" class="fixed inset-0 z-0 pointer-events-none opacity-100 transition-opacity duration-1000"></canvas>
+
+    <!-- FLASH OVERLAY (For Damage) -->
+    <div id="flash-overlay" class="absolute inset-0 pointer-events-none z-[1000] transition-colors duration-200"></div>
+
+    <!-- SCREEN 1: LANDING PAGE -->
+    <div id="screen-landing" class="absolute inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center flex flex-col items-center justify-center z-50 before:content-[''] before:absolute before:inset-0 before:bg-black/70">
+        <div class="tech-borders p-12 flex flex-col items-center border border-gray-800 bg-[#15151c]/90 backdrop-blur-sm relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <h1 class="text-6xl font-black mb-2 tracking-[0.3em] text-white">YUGEN</h1>
+            <h2 class="text-xl tech-font tracking-[0.5em] text-red-500 mb-8">SHIREN : TRIALS</h2>
+            
+            <div class="flex gap-4 mb-12 opacity-50">
+                <i class="fa-solid fa-fire text-orange-500"></i>
+                <i class="fa-solid fa-droplet text-blue-500"></i>
+                <i class="fa-solid fa-wind text-green-400"></i>
+                <i class="fa-solid fa-gem text-amber-600"></i>
+                <i class="fa-solid fa-moon text-purple-500"></i>
+                <i class="fa-solid fa-star text-yellow-300"></i>
+            </div>
+            
+            <button onclick="switchScreen('screen-char-select')" class="px-8 py-3 bg-red-600 text-white font-bold tracking-widest hover:bg-red-500 transition-colors border border-red-400 shadow-[0_0_15px_rgba(255,51,51,0.3)] hover:shadow-[0_0_25px_rgba(255,51,51,0.6)] cursor-pointer">
+                ENTER SYSTEM <i class="fa-solid fa-chevron-right ml-2 text-xs"></i>
+            </button>
+            
+            <div class="mt-8">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8f/Barcode-128.png" class="h-8 opacity-30 invert" alt="barcode">
+                <p class="text-[10px] text-center mt-1 tech-font text-gray-500">YGN_SYS_05_GAME</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: CHARACTER SELECT -->
+    <div id="screen-char-select" class="absolute inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center hidden flex-col items-center justify-center z-40 p-8 before:content-[''] before:absolute before:inset-0 before:bg-black/70">
+        <div class="relative z-10 flex flex-col items-center w-full">
+            <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 border-b border-red-500 pb-2">SELECT LEADER</h2>
+            
+            <div class="flex flex-wrap justify-center gap-6 max-w-6xl">
+                <!-- Char 1 -->
+                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('EIGETSU')">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 transition-colors duration-300 shadow-lg">
+                        <img src="https://placehold.co/200x300/1a1a24/ffffff?text=EIGETSU.chr" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
+                            <p class="font-bold tracking-widest text-xs">EIGETSU.chr</p>
+                            <p class="text-[10px] text-red-400 tech-font">WATER / LIGHT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Char 2 -->
+                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('KOKUYO')">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 transition-colors duration-300 shadow-lg">
+                        <img src="https://placehold.co/200x300/1a1a24/ffffff?text=KOKUYO.chr" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
+                            <p class="font-bold tracking-widest text-xs">KOKUYO.chr</p>
+                            <p class="text-[10px] text-red-400 tech-font">FIRE / DARK</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Char 3 -->
+                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('RAIDEN')">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 transition-colors duration-300 shadow-lg">
+                        <img src="https://placehold.co/200x300/1a1a24/ffffff?text=RAIDEN.chr" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
+                            <p class="font-bold tracking-widest text-xs">RAIDEN.chr</p>
+                            <p class="text-[10px] text-red-400 tech-font">WIND / LIGHT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Char 4 -->
+                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('SHIZUKU')">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 transition-colors duration-300 shadow-lg">
+                        <img src="https://placehold.co/200x300/1a1a24/ffffff?text=SHIZUKU.chr" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
+                            <p class="font-bold tracking-widest text-xs">SHIZUKU.chr</p>
+                            <p class="text-[10px] text-red-400 tech-font">WATER / VOID</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Char 5 -->
+                <div class="cursor-pointer group flex flex-col items-center" onclick="startGame('HOMURA')">
+                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 transition-colors duration-300 shadow-lg">
+                        <img src="https://placehold.co/200x300/1a1a24/ffffff?text=HOMURA.chr" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500">
+                            <p class="font-bold tracking-widest text-xs">HOMURA.chr</p>
+                            <p class="text-[10px] text-red-400 tech-font">FIRE / EARTH</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: MAIN GAME -->
+    <div id="screen-game" class="absolute inset-0 bg-[#0f0f13] hidden flex-col">
+        <!-- Background Grid Decoration -->
+        <div class="absolute inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 50px 50px;"></div>
+
+        <div class="flex-1 w-full max-w-6xl mx-auto flex flex-col p-4 relative">
+            
+            <!-- OPPONENT AREA (Top) -->
+            <div id="opponent-area" class="w-full flex justify-between items-start mb-4">
+                <div class="flex items-start gap-4">
+                    <div class="w-20 h-24 border border-gray-600 bg-black overflow-hidden relative">
+                        <img id="opp-portrait" src="" class="w-full h-full object-cover opacity-80">
+                    </div>
+                    <div class="flex flex-col gap-1 w-64">
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs text-gray-500 tech-font tracking-widest">OPPONENT // <span id="opp-name" class="text-white">CPU</span></span>
+                            <span class="text-lg font-bold text-red-500 tech-font" id="opp-life-text">20</span>
+                        </div>
+                        <div class="barcode-health" id="opp-health-bar">
+                            <!-- JS generates segments -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-right z-10">
+                    <div class="text-3xl font-black text-gray-800">YUGEN</div>
+                    <div class="text-[10px] text-gray-500 tech-font tracking-widest">BATTLE_SYS</div>
+                </div>
+            </div>
+
+            <!-- Opponent Hand (Hidden cards using YUGEN image) -->
+            <div class="flex justify-center gap-2 absolute top-2 right-4 scale-75 origin-top-right z-10">
+                <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
+                <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
+                <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
+            </div>
+
+            <!-- OPPONENT DECK (STOCK) -->
+            <div class="absolute top-24 right-8 z-10 flex flex-col items-center opacity-80">
+                <div class="text-[10px] text-gray-500 mb-2 tracking-widest">STOCK</div>
+                <div class="relative w-[70px] h-[100px]">
+                    <div class="absolute top-2 left-2 w-full h-full border border-gray-600 bg-[#111] rounded"></div>
+                    <div class="absolute top-1 left-1 w-full h-full border border-gray-600 bg-[#1a1a24] rounded"></div>
+                    <div class="absolute top-0 left-0 w-full h-full border border-gray-500 rounded flex flex-col justify-center items-center shadow-[0_4px_10px_rgba(0,0,0,0.8)] bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');">
+                        <div id="opp-deck-count" class="text-[10px] font-bold text-white bg-black/80 px-2 py-0.5 rounded backdrop-blur-sm shadow mt-12 border border-gray-700">25</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BATTLEFIELD GRID -->
+            <div class="flex-1 flex flex-col justify-center gap-8 relative z-20">
+                <!-- Center Decoration Line -->
+                <div class="absolute top-1/2 left-0 w-full h-px bg-gray-800 -translate-y-1/2 z-0 flex justify-center items-center">
+                    <div class="bg-[#0f0f13] px-4"><i class="fa-regular fa-compass text-gray-700 text-2xl"></i></div>
+                </div>
+
+                <!-- Opponent Slots -->
+                <div class="flex justify-center gap-4 z-10" id="opp-slots">
+                    <div class="slot-container empty-slot opp-slot" data-index="0"></div>
+                    <div class="slot-container empty-slot opp-slot" data-index="1"></div>
+                    <div class="slot-container empty-slot opp-slot" data-index="2"></div>
+                    <div class="slot-container empty-slot opp-slot" data-index="3"></div>
+                    <div class="slot-container empty-slot opp-slot" data-index="4"></div>
+                </div>
+                
+                <!-- Player Slots -->
+                <div class="flex justify-center gap-4 z-10" id="player-slots">
+                    <div class="slot-container empty-slot player-slot" data-index="0" onclick="playCardToSlot(0)"></div>
+                    <div class="slot-container empty-slot player-slot" data-index="1" onclick="playCardToSlot(1)"></div>
+                    <div class="slot-container empty-slot player-slot" data-index="2" onclick="playCardToSlot(2)"></div>
+                    <div class="slot-container empty-slot player-slot" data-index="3" onclick="playCardToSlot(3)"></div>
+                    <div class="slot-container empty-slot player-slot" data-index="4" onclick="playCardToSlot(4)"></div>
+                </div>
+            </div>
+
+            <!-- ACTION PANEL -->
+            <div class="fixed md:absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[999] bg-[#0f0f13]/90 border border-gray-700 p-5 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md">
+                <div class="text-xs text-red-500 tech-font tracking-widest mb-2 border-b border-gray-800 pb-2 text-center" id="turn-indicator">TURN 01</div>
+                <div class="text-[10px] tech-font tracking-widest text-gray-400 flex flex-col gap-2 mb-2">
+                    <div id="step-deploy" class="text-white"><i class="fa-solid fa-caret-right text-red-500 mr-2"></i>DEPLOY</div>
+                    <div id="step-act">ACT</div>
+                    <div id="step-end">END</div>
+                </div>
+                <button id="btn-action" onclick="startBattlePhase()" class="w-32 py-3 font-bold tracking-widest border transition-all uppercase cursor-pointer bg-red-600 text-white border-red-400 hover:bg-red-500 hover:shadow-[0_0_15px_rgba(255,51,51,0.6)]">
+                    READY
+                </button>
+            </div>
+
+            <!-- PLAYER DECK (STOCK) -->
+            <div class="absolute bottom-24 left-8 z-10 flex flex-col items-center">
+                <div class="relative w-[70px] h-[100px] cursor-pointer group">
+                    <div class="absolute top-2 left-2 w-full h-full border border-gray-600 bg-[#111] rounded"></div>
+                    <div class="absolute top-1 left-1 w-full h-full border border-gray-600 bg-[#1a1a24] rounded"></div>
+                    <div class="absolute top-0 left-0 w-full h-full border border-gray-500 rounded flex flex-col justify-center items-center shadow-[0_4px_10px_rgba(0,0,0,0.8)] group-hover:-translate-y-2 group-hover:border-red-500 transition-all duration-300 bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');">
+                        <div id="player-deck-count" class="text-[10px] font-bold text-white bg-black/80 px-2 py-0.5 rounded backdrop-blur-sm shadow mt-12 border border-gray-700 group-hover:text-red-400 group-hover:border-red-500 transition-colors">25</div>
+                    </div>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-2 tracking-widest">STOCK</div>
+            </div>
+
+            <!-- Status Message -->
+            <div id="status-msg" class="absolute bottom-40 left-1/2 -translate-x-1/2 text-white font-bold tracking-widest text-sm px-6 py-2 bg-black/80 border border-gray-700 rounded shadow-lg z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+                Pilih kartu dari tangan!
+            </div>
+
+            <!-- PLAYER AREA (Bottom) -->
+            <div id="player-area" class="w-full flex justify-between items-end mt-4 z-30">
+                <!-- Status/Log -->
+                <div class="w-64">
+                    <div class="text-[10px] text-gray-500 tech-font tracking-widest mb-1">SYSTEM_LOG</div>
+                    <div id="game-log" class="text-xs text-gray-300 bg-black/50 p-2 border-l-2 border-red-500 h-16 overflow-y-auto tech-font">
+                        Initiating battle sequence...
+                    </div>
+                </div>
+
+                <!-- Player Hand -->
+                <div class="flex gap-3 justify-center" id="player-hand">
+                    <!-- JS generated cards -->
+                </div>
+
+                <!-- Player Info -->
+                <div class="flex items-end gap-4">
+                    <div class="flex flex-col gap-1 w-64 items-end">
+                        <div class="flex justify-between items-end w-full">
+                            <span class="text-lg font-bold text-red-500 tech-font" id="player-life-text">20</span>
+                            <span class="text-xs text-gray-500 tech-font tracking-widest"><span id="player-name" class="text-white">PLAYER</span> // LEADER</span>
+                        </div>
+                        <div class="barcode-health flex-row-reverse w-full" id="player-health-bar">
+                            <!-- JS generates segments -->
+                        </div>
+                    </div>
+                    <div class="w-20 h-24 border border-gray-600 bg-black overflow-hidden relative">
+                        <img id="player-portrait" src="" class="w-full h-full object-cover opacity-80">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Game Constants & Data
+        const MAX_LIFE = 20;
+        const HAND_SIZE = 4;
+        const TOTAL_DECK_CARDS = 25;
+        
+        const ELEMENTS = {
+            FIRE: { icon: 'fa-fire', color: 'text-orange-500' },
+            WATER: { icon: 'fa-droplet', color: 'text-blue-500' },
+            WIND: { icon: 'fa-wind', color: 'text-green-400' },
+            EARTH: { icon: 'fa-gem', color: 'text-amber-600' },
+            LIGHT: { icon: 'fa-star', color: 'text-yellow-300' },
+            DARK: { icon: 'fa-moon', color: 'text-purple-500' },
+            VOID: { icon: 'fa-circle', color: 'text-gray-400' }
+        };
+
+        const CARD_DB = [
+            { name: "Flame Spirit", element: "FIRE", atk: 3, hp: 3 },
+            { name: "Water Maiden", element: "WATER", atk: 2, hp: 4 },
+            { name: "Wind Samurai", element: "WIND", atk: 4, hp: 2 },
+            { name: "Earth Golem", element: "EARTH", atk: 1, hp: 6 },
+            { name: "Light Guide", element: "LIGHT", atk: 3, hp: 4 },
+            { name: "Dark Avatar", element: "DARK", atk: 5, hp: 1 },
+            { name: "Void Servant", element: "VOID", atk: 2, hp: 2 },
+            { name: "Inferno", element: "FIRE", atk: 4, hp: 3 },
+            { name: "Tsunami", element: "WATER", atk: 3, hp: 5 }
+        ];
+
+        // Game State
+        let state = {
+            turn: 1,
+            phase: 'DEPLOY', // DEPLOY -> ACT -> ENEMY_TURN
+            player: {
+                id: '',
+                life: MAX_LIFE,
+                maxLife: MAX_LIFE,
+                deck: [],
+                hand: [],
+                board: [null, null, null, null, null]
+            },
+            enemy: {
+                id: 'CPU',
+                life: MAX_LIFE,
+                maxLife: MAX_LIFE,
+                deckCount: TOTAL_DECK_CARDS,
+                board: [null, null, null, null, null]
+            },
+            selectedCardIndex: null
+        };
+
+        // Utility: Wait
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        function switchScreen(screenId) {
+            if(screenId === 'screen-game') {
+                document.getElementById('matrix-bg').style.opacity = '0'; // Hide Matrix when game starts
+            }
+            
+            document.getElementById('screen-landing').style.display = 'none';
+            document.getElementById('screen-char-select').style.display = 'none';
+            document.getElementById('screen-game').style.display = 'none';
+            
+            const target = document.getElementById(screenId);
+            target.style.display = 'flex';
+            target.style.opacity = 0;
+            setTimeout(() => {
+                target.style.transition = 'opacity 0.5s';
+                target.style.opacity = 1;
+            }, 50);
+        }
+
+        function startGame(charId) {
+            state.player.id = charId;
+            document.getElementById('player-name').innerText = charId;
+            document.getElementById('player-portrait').src = `https://placehold.co/200x300/1a1a24/ffffff?text=${charId}`;
+            
+            // Randomly select opponent bot
+            const bots = ['EIGETSU', 'KOKUYO', 'RAIDEN', 'SHIZUKU', 'HOMURA'];
+            let botId = bots[Math.floor(Math.random() * bots.length)];
+            while(botId === charId) botId = bots[Math.floor(Math.random() * bots.length)];
+            
+            state.enemy.id = botId;
+            document.getElementById('opp-name').innerText = state.enemy.id;
+            document.getElementById('opp-portrait').src = `https://placehold.co/200x300/1a1a24/ffffff?text=${state.enemy.id}`;
+
+            initGame();
+            switchScreen('screen-game');
+        }
+
+        function createDeck() {
+            let newDeck = [];
+            for(let i=0; i < TOTAL_DECK_CARDS; i++) {
+                const randIndex = Math.floor(Math.random() * CARD_DB.length);
+                newDeck.push({ ...CARD_DB[randIndex], instanceId: Math.random().toString(36).substr(2, 9) });
+            }
+            return newDeck;
+        }
+
+        function initGame() {
+            state.player.life = MAX_LIFE;
+            state.enemy.life = MAX_LIFE;
+            state.player.deck = createDeck();
+            state.enemy.deckCount = TOTAL_DECK_CARDS;
+            state.player.board = [null, null, null, null, null];
+            state.enemy.board = [null, null, null, null, null];
+            state.turn = 1;
+            state.phase = 'DEPLOY';
+            
+            updateHealthBars();
+            drawInitialCards();
+            updateUI();
+        }
+
+        function updateHealthBars() {
+            document.getElementById('player-life-text').innerText = state.player.life;
+            document.getElementById('opp-life-text').innerText = state.enemy.life;
+
+            const pBar = document.getElementById('player-health-bar');
+            const oBar = document.getElementById('opp-health-bar');
+            
+            pBar.innerHTML = ''; oBar.innerHTML = '';
+            
+            for(let i=0; i<MAX_LIFE; i++) {
+                const pSeg = document.createElement('div');
+                pSeg.className = `barcode-segment ${i >= state.player.life ? 'empty' : ''}`;
+                pBar.appendChild(pSeg);
+                
+                const oSeg = document.createElement('div');
+                oSeg.className = `barcode-segment ${i >= state.enemy.life ? 'empty' : ''}`;
+                oBar.appendChild(oSeg);
+            }
+        }
+
+        function updateDeckUI() {
+            const pDeckEl = document.getElementById('player-deck-count');
+            const eDeckEl = document.getElementById('opp-deck-count');
+            if (pDeckEl) pDeckEl.innerText = state.player.deck.length;
+            if (eDeckEl) eDeckEl.innerText = state.enemy.deckCount;
+        }
+
+        async function drawInitialCards() {
+            state.player.hand = [];
+            const handContainer = document.getElementById('player-hand');
+            handContainer.innerHTML = '';
+
+            for(let i=0; i<HAND_SIZE; i++) {
+                if (state.player.deck.length > 0) {
+                    const card = state.player.deck.pop();
+                    state.player.hand.push(card);
+                    
+                    // Render empty slot first, then add html
+                    const wrap = document.createElement('div');
+                    wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300 anim-deal";
+                    wrap.style.animationDelay = `${i * 0.15}s`; // stagger deal animation
+                    
+                    wrap.innerHTML = generateCardHTML(card, 'hand', i, false);
+                    handContainer.appendChild(wrap);
+                    
+                    // Force a reflow and add flip class to simulate drawing from deck face down then flipping
+                    const pCard = wrap.querySelector('.playing-card');
+                    setTimeout(() => { if(pCard) pCard.classList.add('is-flipped'); }, (i * 150) + 400);
+                }
+            }
+            state.enemy.deckCount = Math.max(0, state.enemy.deckCount - HAND_SIZE);
+            updateDeckUI();
+        }
+
+        async function drawSingleCard() {
+            if(state.player.hand.length < HAND_SIZE + 2 && state.player.deck.length > 0) {
+                const card = state.player.deck.pop();
+                const newIndex = state.player.hand.length;
+                state.player.hand.push(card);
+                
+                const handContainer = document.getElementById('player-hand');
+                const wrap = document.createElement('div');
+                wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300 anim-deal";
+                wrap.innerHTML = generateCardHTML(card, 'hand', newIndex, false);
+                handContainer.appendChild(wrap);
+                
+                const pCard = wrap.querySelector('.playing-card');
+                setTimeout(() => { if(pCard) pCard.classList.add('is-flipped'); }, 400);
+
+                updateDeckUI();
+            }
+        }
+
+        function generateCardHTML(card, context = 'hand', index = -1, startFaceDown = false) {
+            const elInfo = ELEMENTS[card.element];
+            const clickAction = context === 'hand' ? `onclick="selectCardFromHand(${index})"` : '';
+            // If startFaceDown is false, we want it flipped immediately (unless it's in hand dealing sequence where we handle it via JS)
+            const flippedClass = (context === 'board' && !startFaceDown) ? 'is-flipped' : '';
+            
+            return `
+                <div class="playing-card ${flippedClass}" ${clickAction} id="${context}-card-${index}">
+                    <div class="card-face card-face-back"></div>
+                    <div class="card-face card-face-front">
+                        <div class="text-center text-[10px] pt-1 font-bold tracking-wider">${card.name}</div>
+                        <div class="card-inner-img">
+                            <i class="fa-solid ${elInfo.icon} ${elInfo.color}"></i>
+                        </div>
+                        <div class="card-stats">
+                            <span class="text-red-400"><i class="fa-solid fa-burst text-[10px]"></i> ${card.atk}</span>
+                            <span class="text-green-400"><i class="fa-solid fa-shield-heart text-[10px]"></i> ${card.hp}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function logGame(msg) {
+            const logEl = document.getElementById('game-log');
+            logEl.innerHTML = `> ${msg}<br>` + logEl.innerHTML;
+        }
+
+        function setStatus(msg) {
+            const statusEl = document.getElementById('status-msg');
+            statusEl.innerText = msg;
+            statusEl.style.opacity = 1;
+            setTimeout(() => statusEl.style.opacity = 0, 2000);
+        }
+
+        function updateUI() {
+            document.getElementById('turn-indicator').innerText = `TURN ${state.turn.toString().padStart(2, '0')}`;
+            const btn = document.getElementById('btn-action');
+            
+            document.getElementById('step-deploy').className = state.phase === 'DEPLOY' ? 'text-white' : 'text-gray-600';
+            document.getElementById('step-act').className = state.phase === 'ACT' ? 'text-white' : 'text-gray-600';
+
+            if(state.phase === 'DEPLOY') {
+                btn.innerText = 'BATTLE';
+                btn.className = "w-32 py-3 font-bold tracking-widest border transition-all uppercase cursor-pointer bg-red-600 text-white border-red-400 hover:bg-red-500 hover:shadow-[0_0_15px_rgba(255,51,51,0.6)]";
+                btn.disabled = false;
+            } else {
+                btn.innerText = 'WAIT...';
+                btn.className = "w-32 py-3 font-bold tracking-widest border transition-all uppercase cursor-not-allowed bg-gray-700 text-gray-400 border-gray-600 opacity-50";
+                btn.disabled = true;
+            }
+        }
+
+        function selectCardFromHand(index) {
+            if(state.phase !== 'DEPLOY') return;
+            
+            // Remove previous selection
+            if(state.selectedCardIndex !== null) {
+                const prev = document.getElementById(`hand-card-${state.selectedCardIndex}`);
+                if(prev) prev.parentElement.classList.remove('selected');
+            }
+            
+            if(state.selectedCardIndex === index) {
+                state.selectedCardIndex = null; // deselect
+                setStatus("Deselected.");
+                return;
+            }
+
+            state.selectedCardIndex = index;
+            const current = document.getElementById(`hand-card-${index}`);
+            if(current) current.parentElement.classList.add('selected');
+            
+            setStatus("Select a board slot to deploy.");
+            // Highlight empty player slots
+            document.querySelectorAll('.player-slot.empty-slot').forEach(slot => slot.classList.add('highlight'));
+        }
+
+        function playCardToSlot(slotIndex) {
+            if(state.phase !== 'DEPLOY' || state.selectedCardIndex === null) return;
+            
+            if(state.player.board[slotIndex] !== null) {
+                setStatus("Slot is occupied!");
+                return;
+            }
+
+            const card = state.player.hand.splice(state.selectedCardIndex, 1)[0];
+            state.player.board[slotIndex] = card;
+            
+            // Re-render hand
+            const handContainer = document.getElementById('player-hand');
+            handContainer.innerHTML = '';
+            state.player.hand.forEach((c, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300";
+                wrap.innerHTML = generateCardHTML(c, 'hand', idx, false);
+                handContainer.appendChild(wrap);
+                wrap.querySelector('.playing-card').classList.add('is-flipped'); // Keep hand open
+            });
+
+            // Put card on board with flip animation
+            const slot = document.querySelector(`.player-slot[data-index="${slotIndex}"]`);
+            slot.innerHTML = generateCardHTML(card, 'board', slotIndex, true); // face down initially
+            slot.classList.remove('empty-slot', 'highlight');
+            slot.classList.add('anim-deal'); // fly in
+            
+            const boardCard = slot.querySelector('.playing-card');
+            setTimeout(() => { if(boardCard) boardCard.classList.add('is-flipped'); }, 400); // flip open
+
+            state.selectedCardIndex = null;
+            document.querySelectorAll('.player-slot').forEach(s => s.classList.remove('highlight'));
+            logGame(`Deployed ${card.name}.`);
+        }
+
+        async function flashDamage(target) {
+            const overlay = document.getElementById('flash-overlay');
+            if(target === 'player') {
+                overlay.style.backgroundColor = 'rgba(255, 0, 0, 0.4)';
+                document.getElementById('player-portrait').parentElement.classList.add('anim-shake');
+            } else {
+                overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                document.getElementById('opp-portrait').parentElement.classList.add('anim-shake');
+            }
+            
+            setTimeout(() => {
+                overlay.style.backgroundColor = 'rgba(0,0,0,0)';
+                document.getElementById('player-portrait').parentElement.classList.remove('anim-shake');
+                document.getElementById('opp-portrait').parentElement.classList.remove('anim-shake');
+            }, 300);
+        }
+
+        async function startBattlePhase() {
+            if (state.phase !== 'DEPLOY') return;
+            state.phase = 'ACT';
+            state.selectedCardIndex = null;
+            updateUI();
+            logGame("BATTLE PHASE START");
+            setStatus("Battle engaged!");
+            await delay(1000);
+            await resolveCombat();
+        }
+
+        async function resolveCombat() {
+            for(let i=0; i<5; i++) {
+                const pCard = state.player.board[i];
+                const eCard = state.enemy.board[i];
+                
+                const pSlot = document.querySelector(`.player-slot[data-index="${i}"]`);
+                const eSlot = document.querySelector(`.opp-slot[data-index="${i}"]`);
+
+                // Player attacks
+                if(pCard) {
+                    if (pSlot && pSlot.firstElementChild) {
+                        pSlot.firstElementChild.style.animation = 'none';
+                        pSlot.firstElementChild.offsetHeight; /* trigger reflow */
+                        pSlot.firstElementChild.style.animation = 'attackUp 0.5s ease-in-out forwards';
+                    }
+                    await delay(250); // hit point
+                    
+                    if(eCard) {
+                        eCard.hp -= pCard.atk;
+                        logGame(`${pCard.name} hits ${eCard.name} for ${pCard.atk} dmg.`);
+                        if(eSlot && eSlot.firstElementChild) {
+                            eSlot.firstElementChild.classList.add('anim-shake');
+                            setTimeout(() => eSlot.firstElementChild.classList.remove('anim-shake'), 400);
+                        }
+                    } else {
+                        state.enemy.life -= pCard.atk;
+                        logGame(`Direct attack! CPU takes ${pCard.atk} dmg.`);
+                        flashDamage('enemy');
+                    }
+                    updateHealthBars();
+                    
+                    // Update stats visually immediately
+                    if(eCard && eSlot) eSlot.innerHTML = generateCardHTML(eCard, 'board', i, false);
+                    
+                    await delay(350);
+                }
+
+                // Enemy attacks
+                if(eCard && eCard.hp > 0) {
+                    if (eSlot && eSlot.firstElementChild) {
+                        eSlot.firstElementChild.style.animation = 'none';
+                        eSlot.firstElementChild.offsetHeight;
+                        eSlot.firstElementChild.style.animation = 'attackDown 0.5s ease-in-out forwards';
+                    }
+                    await delay(250);
+                    
+                    if(pCard && pCard.hp > 0) {
+                        pCard.hp -= eCard.atk;
+                        logGame(`${eCard.name} counters ${pCard.name} for ${eCard.atk} dmg.`);
+                        if(pSlot && pSlot.firstElementChild) {
+                            pSlot.firstElementChild.classList.add('anim-shake');
+                            setTimeout(() => pSlot.firstElementChild.classList.remove('anim-shake'), 400);
+                        }
+                    } else {
+                        state.player.life -= eCard.atk;
+                        logGame(`CPU direct attack! You take ${eCard.atk} dmg.`);
+                        flashDamage('player');
+                    }
+                    updateHealthBars();
+                    
+                    if(pCard && pSlot) pSlot.innerHTML = generateCardHTML(pCard, 'board', i, false);
+                    
+                    await delay(350);
+                }
+
+                // Remove dead cards
+                if(pCard && pCard.hp <= 0) {
+                    state.player.board[i] = null;
+                    if(pSlot) {
+                        pSlot.innerHTML = '';
+                        pSlot.className = 'slot-container empty-slot player-slot';
+                    }
+                }
+                if(eCard && eCard.hp <= 0) {
+                    state.enemy.board[i] = null;
+                    if(eSlot) {
+                        eSlot.innerHTML = '';
+                        eSlot.className = 'slot-container empty-slot opp-slot';
+                    }
+                }
+                
+                if(state.player.life <= 0 || state.enemy.life <= 0) break;
+            }
+
+            await delay(1000);
+            
+            if(state.player.life <= 0) {
+                gameOver("DEFEAT");
+            } else if (state.enemy.life <= 0) {
+                gameOver("VICTORY");
+            } else {
+                startEnemyTurn();
+            }
+        }
+
+        async function startEnemyTurn() {
+            state.phase = 'ENEMY_TURN';
+            updateUI();
+            setStatus("Enemy is thinking...");
+            await delay(1000);
+
+            let emptyEnemySlots = [];
+            for(let i=0; i<5; i++) {
+                if(!state.enemy.board[i]) emptyEnemySlots.push(i);
+            }
+            emptyEnemySlots.sort(() => Math.random() - 0.5);
+            
+            const cardsToPlay = Math.min(2, emptyEnemySlots.length);
+            for(let i=0; i<cardsToPlay; i++) {
+                if(state.enemy.deckCount <= 0) break;
+                
+                const slotIndex = emptyEnemySlots[i];
+                const randIndex = Math.floor(Math.random() * CARD_DB.length);
+                const enemyCard = { ...CARD_DB[randIndex] };
+                
+                state.enemy.board[slotIndex] = enemyCard;
+                state.enemy.deckCount--;
+                
+                // Deal & Flip animation for CPU
+                const eSlot = document.querySelector(`.opp-slot[data-index="${slotIndex}"]`);
+                eSlot.innerHTML = generateCardHTML(enemyCard, 'board', slotIndex, true); // true = start face down
+                eSlot.className = 'slot-container opp-slot';
+                eSlot.classList.add('anim-deal-enemy');
+                
+                const eCardEl = eSlot.querySelector('.playing-card');
+                updateDeckUI();
+                
+                await delay(400); // Wait for fly-in animation
+                if (eCardEl) eCardEl.classList.add('is-flipped'); // Flip open safely
+                await delay(400); // brief pause before next action
+            }
+
+            setStatus("Enemy phase ended.");
+            await delay(500);
+
+            // Start new turn
+            state.turn++;
+            if(state.enemy.deckCount > 0) state.enemy.deckCount--; // simulate opponent draw
+            drawSingleCard();
+            
+            state.phase = 'DEPLOY';
+            updateUI();
+            updateDeckUI();
+        }
+
+        function gameOver(result) {
+            const overlay = document.createElement('div');
+            overlay.className = 'absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[1000]';
+            overlay.innerHTML = `
+                <h1 class="text-6xl font-black mb-4 tracking-[0.3em] ${result === 'VICTORY' ? 'text-green-500' : 'text-red-600'}">${result}</h1>
+                <p class="text-gray-400 tech-font tracking-widest mb-8">SIMULATION TERMINATED.</p>
+                <button onclick="location.reload()" class="px-8 py-3 bg-transparent text-white font-bold tracking-widest border border-gray-500 hover:border-white transition-colors cursor-pointer">
+                    RESTART
+                </button>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // --- MATRIX BACKGROUND SCRIPT ---
+        const matrixCanvas = document.getElementById('matrix-bg');
+        const ctx = matrixCanvas.getContext('2d');
+        
+        function resizeCanvas() {
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
+        const fontSize = 48; // Huruf Besar
+        
+        class MatrixDrop {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * -matrixCanvas.height; 
+            }
+            reset() {
+                this.x = Math.random() * matrixCanvas.width;
+                this.y = -fontSize * 5;
+                this.speed = Math.random() * 1.5 + 0.5; // Jatuh lambat
+                this.length = Math.floor(Math.random() * 5) + 3; // Untaian pendek
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > matrixCanvas.height + this.length * fontSize) {
+                    if (Math.random() > 0.98) { // Jarang respawn (Jeda random)
+                        this.reset();
+                    }
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.25)'; // Merah transparan
+                ctx.font = 'bold ' + fontSize + 'px monospace';
+                for (let i = 0; i < this.length; i++) {
+                    let charY = this.y - (i * fontSize);
+                    if (charY > 0 && charY < matrixCanvas.height + fontSize) {
+                        const text = katakana.charAt(Math.floor(Math.random() * katakana.length));
+                        ctx.fillText(text, this.x, charY);
+                    }
+                }
+            }
+        }
+
+        // Hitung jumlah drop (kolom) menjadi sangat sedikit (Jarang)
+        const dropsCount = Math.floor(window.innerWidth / 150); 
+        let matrixDrops = [];
+        for(let i=0; i<dropsCount; i++) {
+            matrixDrops.push(new MatrixDrop());
+        }
+
+        function drawMatrix() {
+            ctx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+            matrixDrops.forEach(drop => {
+                drop.update();
+                drop.draw();
+            });
+            requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+
+    </script>
+</body>
+</html>
