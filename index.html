@@ -32,8 +32,8 @@
             perspective: 1000px;
         }
         
-        .playing-card:not(.is-flipped):hover { transform: translateY(-10px); border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); }
-        .playing-card.selected { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 51, 51, 0.8); transform: translateY(-15px); }
+        .playing-card:not(.is-flipped):hover { translate: 0 -10px; border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); }
+        .playing-card.selected { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 51, 51, 0.8); translate: 0 -15px; }
         
         /* 3D Flip Faces */
         .card-face {
@@ -47,6 +47,7 @@
         
         .card-back {
             background-color: #111;
+            background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');
             background-size: cover;
             background-position: center;
             border: 1px solid #555;
@@ -67,10 +68,10 @@
         .card-inner-img { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%); }
         .card-stats { height: 24px; background-color: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 8px; font-size: 0.75rem; font-weight: bold; border-top: 1px solid #444; }
 
-        @keyframes drawCard { from { opacity: 0; transform: translateY(50px) scale(0.8) rotateY(0deg); } to { opacity: 1; transform: translateY(0) scale(1) rotateY(0deg); } }
-        @keyframes attackUp { 0% { transform: translateY(0) rotateY(180deg); } 50% { transform: translateY(-40px) scale(1.1) rotateY(180deg); z-index: 20; } 100% { transform: translateY(0) rotateY(180deg); z-index: 1;} }
-        @keyframes attackDown { 0% { transform: translateY(0) rotateY(180deg); } 50% { transform: translateY(40px) scale(1.1) rotateY(180deg); z-index: 20; } 100% { transform: translateY(0) rotateY(180deg); z-index: 1;} }
-        @keyframes damageShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+        @keyframes drawCard { from { opacity: 0; translate: 0 50px; scale: 0.8; } to { opacity: 1; translate: 0 0; scale: 1; } }
+        @keyframes attackUp { 0% { translate: 0 0; } 50% { translate: 0 -40px; scale: 1.1; z-index: 20; } 100% { translate: 0 0; z-index: 1;} }
+        @keyframes attackDown { 0% { translate: 0 0; } 50% { translate: 0 40px; scale: 1.1; z-index: 20; } 100% { translate: 0 0; z-index: 1;} }
+        @keyframes damageShake { 0%, 100% { translate: 0 0; } 20%, 60% { translate: -10px 0; } 40%, 80% { translate: 10px 0; } }
         
         /* Brush Anim */
         @keyframes brushStroke { 0% { clip-path: inset(0 100% 0 0); transform: translateX(-20px) scale(0.95); opacity: 0; filter: blur(5px); } 50% { opacity: 1; filter: blur(0); } 100% { clip-path: inset(0 0 0 0); transform: translateX(0) scale(1); opacity: 1; } }
@@ -528,7 +529,7 @@
             const flippedClass = startFaceDown ? '' : 'is-flipped'; // flip active reveals front
 
             return `
-                <div class="playing-card anim-draw ${context === 'hand' ? 'hover:-translate-y-4' : ''} ${flippedClass}" ${clickAction} id="${context}-card-${index}">
+                <div class="playing-card anim-draw ${flippedClass}" ${clickAction} id="${context}-card-${index}">
                     <div class="card-face card-back"></div>
                     <div class="card-face card-front">
                         <div class="text-center text-[10px] pt-1 font-bold tracking-wider">${card.name}</div>
