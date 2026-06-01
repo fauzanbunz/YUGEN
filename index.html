@@ -143,36 +143,36 @@
         }
 
         /* Animations */
-        @keyframes dealCard {
-            0% { opacity: 0; transform: translateY(100px) scale(0.5) rotateX(-45deg); }
-            100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
-        }
-        @keyframes dealEnemyCard {
-            0% { opacity: 0; transform: translateY(-100px) scale(0.5) rotateX(45deg); }
-            100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
-        }
-        
-        @keyframes attackUp {
-            0% { transform: rotateY(180deg) translateY(0); }
-            50% { transform: rotateY(180deg) translateY(-40px) scale(1.1); z-index: 20; }
-            100% { transform: rotateY(180deg) translateY(0); z-index: 1;}
-        }
-        
-        @keyframes attackDown {
-            0% { transform: rotateY(180deg) translateY(0); }
-            50% { transform: rotateY(180deg) translateY(40px) scale(1.1); z-index: 20; }
-            100% { transform: rotateY(180deg) translateY(0); z-index: 1;}
-        }
-        
-        @keyframes damageShake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
+        @keyframes screenFlash {
+            0% { background-color: rgba(255, 0, 0, 0); }
+            50% { background-color: rgba(255, 0, 0, 0.3); }
+            100% { background-color: rgba(255, 0, 0, 0); }
         }
 
-        .anim-deal { animation: dealCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .anim-deal-enemy { animation: dealEnemyCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* Brush Stroke Reveal Animation */
+        @keyframes brushStroke {
+            0% {
+                clip-path: inset(0 100% 0 0); /* Sembunyikan sepenuhnya dari kanan */
+                opacity: 0.5;
+                transform: translateX(-30px) scale(0.95);
+            }
+            70% {
+                clip-path: inset(0 0% 0 0); /* Buka sepenuhnya */
+                opacity: 1;
+                transform: translateX(5px) scale(1.02);
+            }
+            100% {
+                clip-path: inset(0 0 0 0);
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .anim-draw { animation: drawCard 0.4s ease-out forwards; }
+        .anim-atk-up { animation: attackUp 0.5s ease-in-out; }
+        .anim-atk-down { animation: attackDown 0.5s ease-in-out; }
         .anim-shake { animation: damageShake 0.4s; border-color: red !important; box-shadow: 0 0 20px red !important; }
+        .anim-brush { animation: brushStroke 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         
         .tech-borders {
             position: relative;
@@ -193,41 +193,31 @@
 </head>
 <body class="h-screen w-screen relative">
 
+    <!-- GLOBAL WALLPAPER (Used by Landing & Char Select) -->
+    <div id="global-bg" class="fixed inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center z-0 before:content-[''] before:absolute before:inset-0 before:bg-black/70 transition-opacity duration-1000"></div>
+
     <!-- MATRIX CANVAS BACKGROUND -->
-    <canvas id="matrix-bg" class="fixed inset-0 z-0 pointer-events-none opacity-100 transition-opacity duration-1000"></canvas>
+    <canvas id="matrix-bg" class="fixed inset-0 z-10 pointer-events-none opacity-100 transition-opacity duration-1000"></canvas>
 
     <!-- FLASH OVERLAY (For Damage) -->
     <div id="flash-overlay" class="absolute inset-0 pointer-events-none z-[1000] transition-colors duration-200"></div>
 
     <!-- SCREEN 1: LANDING PAGE -->
-    <div id="screen-landing" class="absolute inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center flex flex-col items-center justify-center z-50 before:content-[''] before:absolute before:inset-0 before:bg-black/70">
-        <div class="tech-borders p-12 flex flex-col items-center border border-gray-800 bg-[#15151c]/90 backdrop-blur-sm relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
-            <h1 class="text-6xl font-black mb-2 tracking-[0.3em] text-white">YUGEN</h1>
-            <h2 class="text-xl tech-font tracking-[0.5em] text-red-500 mb-8">SHIREN : TRIALS</h2>
-            
-            <div class="flex gap-4 mb-12 opacity-50">
-                <i class="fa-solid fa-fire text-orange-500"></i>
-                <i class="fa-solid fa-droplet text-blue-500"></i>
-                <i class="fa-solid fa-wind text-green-400"></i>
-                <i class="fa-solid fa-gem text-amber-600"></i>
-                <i class="fa-solid fa-moon text-purple-500"></i>
-                <i class="fa-solid fa-star text-yellow-300"></i>
-            </div>
+    <div id="screen-landing" class="absolute inset-0 flex flex-col items-center justify-center z-50">
+        <div class="flex flex-col items-center relative z-20">
+            <!-- Brush Logo YUGEN with Animation -->
+            <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/brush.svg" alt="YUGEN Logo" class="w-[400px] md:w-[600px] mb-4 drop-shadow-[0_0_20px_rgba(255,0,0,0.6)] anim-brush">
+            <h2 class="text-xl tech-font tracking-[0.5em] text-red-500 mb-12">SHIREN : TRIALS</h2>
             
             <button onclick="switchScreen('screen-char-select')" class="px-8 py-3 bg-red-600 text-white font-bold tracking-widest hover:bg-red-500 transition-colors border border-red-400 shadow-[0_0_15px_rgba(255,51,51,0.3)] hover:shadow-[0_0_25px_rgba(255,51,51,0.6)] cursor-pointer">
                 ENTER SYSTEM <i class="fa-solid fa-chevron-right ml-2 text-xs"></i>
             </button>
-            
-            <div class="mt-8">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8f/Barcode-128.png" class="h-8 opacity-30 invert" alt="barcode">
-                <p class="text-[10px] text-center mt-1 tech-font text-gray-500">YGN_SYS_05_GAME</p>
-            </div>
         </div>
     </div>
 
     <!-- SCREEN 2: CHARACTER SELECT -->
-    <div id="screen-char-select" class="absolute inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center hidden flex-col items-center justify-center z-40 p-8 before:content-[''] before:absolute before:inset-0 before:bg-black/70">
-        <div class="relative z-10 flex flex-col items-center w-full">
+    <div id="screen-char-select" class="absolute inset-0 hidden flex-col items-center justify-center z-40 p-8">
+        <div class="relative z-20 flex flex-col items-center w-full">
             <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 border-b border-red-500 pb-2">SELECT LEADER</h2>
             
             <div class="flex flex-wrap justify-center gap-6 max-w-6xl">
@@ -934,29 +924,29 @@
         resizeCanvas();
 
         const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
-        const fontSize = 48; // Huruf Besar
+        const fontSize = 64; // Huruf Besar & Diperbesar
         
         class MatrixDrop {
             constructor() {
                 this.reset();
-                this.y = Math.random() * -matrixCanvas.height; 
+                this.y = Math.random() * -matrixCanvas.height * 2; 
             }
             reset() {
                 this.x = Math.random() * matrixCanvas.width;
-                this.y = -fontSize * 5;
+                this.y = -(Math.random() * 500 + 100);
                 this.speed = Math.random() * 1.5 + 0.5; // Jatuh lambat
-                this.length = Math.floor(Math.random() * 5) + 3; // Untaian pendek
+                this.length = Math.floor(Math.random() * 3) + 2; // Untaian pendek, terlihat seperti huruf putus-putus
             }
             update() {
                 this.y += this.speed;
                 if (this.y > matrixCanvas.height + this.length * fontSize) {
-                    if (Math.random() > 0.98) { // Jarang respawn (Jeda random)
+                    if (Math.random() > 0.98) { // Jarang respawn agar tersebar (sparse)
                         this.reset();
                     }
                 }
             }
             draw() {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.25)'; // Merah transparan
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; // Merah transparan
                 ctx.font = 'bold ' + fontSize + 'px monospace';
                 for (let i = 0; i < this.length; i++) {
                     let charY = this.y - (i * fontSize);
@@ -968,8 +958,8 @@
             }
         }
 
-        // Hitung jumlah drop (kolom) menjadi sangat sedikit (Jarang)
-        const dropsCount = Math.floor(window.innerWidth / 150); 
+        // Hitung jumlah drop menjadi sangat sedikit (agar random dan jarang)
+        const dropsCount = Math.floor(window.innerWidth / 200); 
         let matrixDrops = [];
         for(let i=0; i<dropsCount; i++) {
             matrixDrops.push(new MatrixDrop());
