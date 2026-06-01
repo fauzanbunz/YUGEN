@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YUGEN Card Battle</title>
+    <title>YUGEN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,181 +11,91 @@
 
         body {
             font-family: 'Noto Sans JP', sans-serif;
-            background-color: #0f0f13;
+            background-color: #000;
             color: #e2e8f0;
             overflow: hidden;
             user-select: none;
         }
 
-        .tech-font {
-            font-family: 'Share Tech Mono', monospace;
-        }
+        .tech-font { font-family: 'Share Tech Mono', monospace; }
 
-        /* Health Bar Barcode Style */
-        .barcode-health {
-            display: flex;
-            height: 12px;
-            gap: 2px;
-            background: #111;
-            padding: 2px;
-            border: 1px solid #333;
-        }
-        .barcode-segment {
-            flex: 1;
-            background-color: #ff3333;
-            transition: all 0.3s;
-        }
-        .barcode-segment.empty {
-            background-color: #222;
-        }
+        .barcode-health { display: flex; height: 12px; gap: 2px; background: #111; padding: 2px; border: 1px solid #333; }
+        .barcode-segment { flex: 1; background-color: #ff3333; transition: all 0.3s; }
+        .barcode-segment.empty { background-color: #222; }
 
-        /* Card Flip Container */
-        .slot-container {
-            width: 90px;
-            height: 130px;
-            perspective: 1000px; /* Gives 3D depth */
-            border-radius: 4px;
-            position: relative;
+        .playing-card {
+            width: 90px; height: 130px; background-color: #1a1a24; border: 1px solid #444; border-radius: 4px;
+            position: relative; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; overflow: hidden;
+            /* Added for 3D flip */
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
         
-        .empty-slot {
-            border: 1px dashed #555;
-            background-color: rgba(255,255,255,0.02);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s;
-        }
-        .empty-slot.highlight {
-            border-color: #ff3333;
-            background-color: rgba(255, 51, 51, 0.1);
-        }
-
-        /* The actual flipping card */
-        .playing-card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            transform-style: preserve-3d;
-            cursor: pointer;
-        }
-
-        /* Face up states */
-        .playing-card.is-flipped {
-            transform: rotateY(180deg);
-        }
-
-        /* Card Faces */
+        .playing-card:not(.is-flipped):hover { transform: translateY(-10px); border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); }
+        .playing-card.selected { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 51, 51, 0.8); transform: translateY(-15px); }
+        
+        /* 3D Flip Faces */
         .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-            border: 1px solid #444;
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column;
         }
-
-        /* Back of the card */
-        .card-face-back {
-            background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');
+        
+        .card-front {
+            background-color: #1a1a24;
+            transform: rotateY(180deg); /* Flipped by default */
+        }
+        
+        .card-back {
+            background-color: #111;
             background-size: cover;
             background-position: center;
+            border: 1px solid #555;
         }
+        
+        /* Class to trigger flip */
+        .is-flipped { transform: rotateY(180deg); }
 
-        /* Front of the card */
-        .card-face-front {
-            background-color: #1a1a24;
-            transform: rotateY(180deg);
-            display: flex;
-            flex-direction: column;
+        .empty-slot {
+            width: 90px; height: 130px; border: 1px dashed #555; background-color: rgba(255,255,255,0.02);
+            display: flex; justify-content: center; align-items: center; border-radius: 4px; transition: all 0.2s;
         }
         
-        .playing-card:hover:not(.is-flipped) .card-face-back {
-            border-color: #ff3333;
-            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
-        }
-        .playing-card:hover .card-face-front {
-            border-color: #ff3333;
-            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
-        }
+        .slot-container { width: 90px; height: 130px; position: relative; }
         
-        .slot-container.selected {
-            transform: translateY(-15px);
-            z-index: 50;
-        }
-        .slot-container.selected .card-face-front {
-            border-color: #ff3333;
-            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
-        }
+        .empty-slot.highlight { border-color: #ff3333; background-color: rgba(255, 51, 51, 0.1); }
         
-        .card-inner-img {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5rem;
-            background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%);
-        }
-        
-        .card-stats {
-            height: 24px;
-            background-color: #000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 8px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            border-top: 1px solid #444;
-        }
+        .card-inner-img { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%); }
+        .card-stats { height: 24px; background-color: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 8px; font-size: 0.75rem; font-weight: bold; border-top: 1px solid #444; }
 
-        /* Animations */
-        @keyframes screenFlash {
-            0% { background-color: rgba(255, 0, 0, 0); }
-            50% { background-color: rgba(255, 0, 0, 0.3); }
-            100% { background-color: rgba(255, 0, 0, 0); }
-        }
-
-        /* Brush Stroke Reveal Animation */
-        @keyframes brushStroke {
-            0% {
-                clip-path: inset(0 100% 0 0); /* Sembunyikan sepenuhnya dari kanan */
-                opacity: 0.5;
-                transform: translateX(-30px) scale(0.95);
-            }
-            70% {
-                clip-path: inset(0 0% 0 0); /* Buka sepenuhnya */
-                opacity: 1;
-                transform: translateX(5px) scale(1.02);
-            }
-            100% {
-                clip-path: inset(0 0 0 0);
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        }
+        @keyframes drawCard { from { opacity: 0; transform: translateY(50px) scale(0.8) rotateY(0deg); } to { opacity: 1; transform: translateY(0) scale(1) rotateY(0deg); } }
+        @keyframes attackUp { 0% { transform: translateY(0) rotateY(180deg); } 50% { transform: translateY(-40px) scale(1.1) rotateY(180deg); z-index: 20; } 100% { transform: translateY(0) rotateY(180deg); z-index: 1;} }
+        @keyframes attackDown { 0% { transform: translateY(0) rotateY(180deg); } 50% { transform: translateY(40px) scale(1.1) rotateY(180deg); z-index: 20; } 100% { transform: translateY(0) rotateY(180deg); z-index: 1;} }
+        @keyframes damageShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+        
+        /* Brush Anim */
+        @keyframes brushStroke { 0% { clip-path: inset(0 100% 0 0); transform: translateX(-20px) scale(0.95); opacity: 0; filter: blur(5px); } 50% { opacity: 1; filter: blur(0); } 100% { clip-path: inset(0 0 0 0); transform: translateX(0) scale(1); opacity: 1; } }
+        
+        /* Character Slide */
+        @keyframes slideInChar { from { transform: translateX(-100px); opacity: 0; filter: drop-shadow(0 0 0px transparent); } to { transform: translateX(0); opacity: 1; filter: drop-shadow(10px 0 20px rgba(255,0,0,0.6)); } }
 
         .anim-draw { animation: drawCard 0.4s ease-out forwards; }
         .anim-atk-up { animation: attackUp 0.5s ease-in-out; }
         .anim-atk-down { animation: attackDown 0.5s ease-in-out; }
-        .anim-shake { animation: damageShake 0.4s; border-color: red !important; box-shadow: 0 0 20px red !important; }
-        .anim-brush { animation: brushStroke 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        
-        .tech-borders {
-            position: relative;
-        }
-        .tech-borders::before, .tech-borders::after {
-            content: '';
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            border: 1px solid #ff3333;
-        }
+        .anim-shake { animation: damageShake 0.4s; border-color: red !important; }
+        .anim-brush { animation: brushStroke 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .anim-slide-char { animation: slideInChar 0.5s ease-out forwards; }
+
+        .tech-borders { position: relative; }
+        .tech-borders::before, .tech-borders::after { content: ''; position: absolute; width: 10px; height: 10px; border: 1px solid #ff3333; }
         .tech-borders::before { top: 0; left: 0; border-right: none; border-bottom: none; }
         .tech-borders::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        @keyframes pulseRedGlow {
+            0% { filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.3)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 40px rgba(255, 0, 0, 1)); transform: scale(1.05); }
+            100% { filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.3)); transform: scale(1); }
+        }
+        .anim-pulse-red { animation: pulseRedGlow 2.5s infinite ease-in-out; }
 
         /* Hide scrollbar */
         ::-webkit-scrollbar { display: none; }
@@ -193,98 +103,59 @@
 </head>
 <body class="h-screen w-screen relative">
 
+    <!-- AUDIO PLAYER (BGM) -->
+    <audio id="bgm-player" loop>
+        <source src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Shogun%20War%20Banner.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- SCREEN 0: PRE-LANDING -->
+    <div id="screen-pre-landing" class="absolute inset-0 bg-black flex flex-col items-center justify-center z-[2000] transition-opacity duration-1000">
+        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/brush.svg" 
+             alt="YUGEN START" 
+             class="w-[250px] md:w-[400px] cursor-pointer anim-pulse-red"
+             onclick="startExperience()">
+        <p class="absolute bottom-16 text-red-700 tech-font tracking-[0.4em] text-xs animate-pulse pointer-events-none">CLICK LOGO TO INITIATE</p>
+    </div>
+
     <!-- GLOBAL WALLPAPER (Used by Landing & Char Select) -->
     <div id="global-bg" class="fixed inset-0 bg-[#0f0f13] bg-[url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/wallpaper.png')] bg-cover bg-center z-0 before:content-[''] before:absolute before:inset-0 before:bg-black/70 transition-opacity duration-1000"></div>
 
-    <!-- MATRIX CANVAS BACKGROUND -->
-    <canvas id="matrix-bg" class="fixed inset-0 z-10 pointer-events-none opacity-100 transition-opacity duration-1000"></canvas>
-
+    <!-- MATRIX CANVAS -->
+    <canvas id="matrix-canvas" class="fixed inset-0 z-10 pointer-events-none transition-opacity duration-1000"></canvas>
+    
     <!-- FLASH OVERLAY (For Damage) -->
-    <div id="flash-overlay" class="absolute inset-0 pointer-events-none z-[1000] transition-colors duration-200"></div>
+    <div id="flash-overlay" class="absolute inset-0 pointer-events-none z-[200] transition-colors duration-200"></div>
 
     <!-- SCREEN 1: LANDING PAGE -->
     <div id="screen-landing" class="absolute inset-0 flex flex-col items-center justify-center z-50">
         <div class="flex flex-col items-center relative z-20">
             <!-- Brush Logo YUGEN with Animation -->
-            <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/brush.svg" alt="YUGEN Logo" class="w-[400px] md:w-[600px] mb-4 drop-shadow-[0_0_20px_rgba(255,0,0,0.6)] anim-brush">
-            <h2 class="text-xl tech-font tracking-[0.5em] text-red-500 mb-12">SHIREN : TRIALS</h2>
+            <img id="landing-logo" src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/brush.svg" alt="YUGEN Logo" class="w-[400px] md:w-[600px] mb-4 drop-shadow-[0_0_20px_rgba(255,0,0,0.6)] opacity-0">
             
-            <button onclick="switchScreen('screen-char-select')" class="px-8 py-3 bg-red-600 text-white font-bold tracking-widest hover:bg-red-500 transition-colors border border-red-400 shadow-[0_0_15px_rgba(255,51,51,0.3)] hover:shadow-[0_0_25px_rgba(255,51,51,0.6)] cursor-pointer">
+            <button onclick="enterSystem()" class="px-8 py-3 mt-12 bg-red-600 text-white font-bold tracking-widest hover:bg-red-500 transition-colors border border-red-400 shadow-[0_0_15px_rgba(255,51,51,0.3)] hover:shadow-[0_0_25px_rgba(255,51,51,0.6)] cursor-pointer">
                 ENTER SYSTEM <i class="fa-solid fa-chevron-right ml-2 text-xs"></i>
             </button>
         </div>
     </div>
 
     <!-- SCREEN 2: CHARACTER SELECT -->
-    <div id="screen-char-select" class="absolute inset-0 hidden flex-col items-center justify-center z-40 p-8 overflow-hidden">
+    <div id="screen-char-select" class="absolute inset-0 hidden flex-col items-center justify-center z-40 p-8">
         
-        <!-- FIGURE PREVIEW (Slides from left) -->
-        <img id="char-figure-preview" src="" class="absolute bottom-0 left-0 h-[90vh] object-contain opacity-0 -translate-x-24 transition-all duration-500 ease-out drop-shadow-[0_0_30px_rgba(255,0,0,0.9)] pointer-events-none z-10" alt="">
+        <!-- Hover Figur Preview -->
+        <div id="char-figur-container" class="absolute left-10 bottom-0 h-[80vh] w-[400px] pointer-events-none z-30 hidden items-end justify-center">
+            <img id="char-figur-img" src="" class="max-h-full max-w-full object-contain drop-shadow-[10px_0_20px_rgba(255,0,0,0.6)]">
+        </div>
 
-        <div class="relative z-20 flex flex-col items-center w-full">
-            <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 border-b border-red-500 pb-2 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">SELECT LEADER</h2>
-            
-            <div class="flex flex-wrap justify-center gap-6 max-w-6xl">
-                <!-- Char 1 -->
-                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('ARAGAMI')" onmouseenter="previewChar('ARAGAMI')" onmouseleave="clearPreview()">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
-                        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Aragami.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
-                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">ARAGAMI.chr</p>
-                            <p class="text-[10px] text-gray-400 tech-font">FIRE / WIND</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Char 2 -->
-                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('EIGETSU')" onmouseenter="previewChar('EIGETSU')" onmouseleave="clearPreview()">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
-                        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Eigetsu.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
-                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">EIGETSU.chr</p>
-                            <p class="text-[10px] text-gray-400 tech-font">WATER / LIGHT</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Char 3 -->
-                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('HAKUREI')" onmouseenter="previewChar('HAKUREI')" onmouseleave="clearPreview()">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
-                        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Hakurei.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
-                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">HAKUREI.chr</p>
-                            <p class="text-[10px] text-gray-400 tech-font">LIGHT / VOID</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Char 4 -->
-                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('KOKUYO')" onmouseenter="previewChar('KOKUYO')" onmouseleave="clearPreview()">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
-                        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Kokuyo.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
-                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">KOKUYO.chr</p>
-                            <p class="text-[10px] text-gray-400 tech-font">FIRE / DARK</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Char 5 -->
-                <div class="cursor-pointer group flex flex-col items-center z-20 hover:z-50" onclick="startGame('MUKU')" onmouseenter="previewChar('MUKU')" onmouseleave="clearPreview()">
-                    <div class="w-40 h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_30px_rgba(255,51,51,1)] transition-all duration-300 shadow-lg">
-                        <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Muku.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
-                        <div class="absolute bottom-0 w-full bg-black/80 p-2 border-t border-gray-700 group-hover:border-red-500 transition-colors">
-                            <p class="font-bold tracking-widest text-xs group-hover:text-red-400">MUKU.chr</p>
-                            <p class="text-[10px] text-gray-400 tech-font">EARTH / WATER</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <h2 class="text-2xl tech-font tracking-[0.3em] text-white mb-12 z-20 mt-16 relative">SELECT LEADER</h2>
+        
+        <div class="flex gap-4 md:gap-8 z-20 flex-wrap justify-center relative">
+            <!-- Char Profiles (Dynamic gen via JS) -->
+            <div id="char-select-grid" class="flex gap-4 md:gap-8 z-20 flex-wrap justify-center"></div>
         </div>
     </div>
 
     <!-- SCREEN 3: MAIN GAME -->
-    <div id="screen-game" class="absolute inset-0 bg-[#0f0f13] hidden flex-col">
+    <div id="screen-game" class="absolute inset-0 bg-[#0f0f13] hidden flex-col z-50">
         <!-- Background Grid Decoration -->
         <div class="absolute inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 50px 50px;"></div>
 
@@ -293,34 +164,32 @@
             <!-- OPPONENT AREA (Top) -->
             <div id="opponent-area" class="w-full flex justify-between items-start mb-4">
                 <div class="flex items-start gap-4">
-                    <div class="w-20 h-24 border-2 border-gray-600 bg-black overflow-hidden relative transition-all duration-300 hover:border-red-500 hover:shadow-[0_0_15px_rgba(255,51,51,0.8)] cursor-crosshair">
-                        <img id="opp-portrait" src="" class="w-full h-full object-cover opacity-80">
+                    <div class="w-20 h-24 border border-gray-600 bg-black overflow-hidden relative group hover:border-red-500 transition-colors duration-300 hover:shadow-[0_0_15px_rgba(255,0,0,0.6)]">
+                        <img id="opp-portrait" src="" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">
                     </div>
                     <div class="flex flex-col gap-1 w-64">
                         <div class="flex justify-between items-end">
                             <span class="text-xs text-gray-500 tech-font tracking-widest">OPPONENT // <span id="opp-name" class="text-white">CPU</span></span>
                             <span class="text-lg font-bold text-red-500 tech-font" id="opp-life-text">20</span>
                         </div>
-                        <div class="barcode-health" id="opp-health-bar">
-                            <!-- JS generates segments -->
-                        </div>
+                        <div class="barcode-health" id="opp-health-bar"></div>
                     </div>
                 </div>
                 
-                <div class="text-right z-10">
+                <div class="text-right">
                     <div class="text-3xl font-black text-gray-800">YUGEN</div>
                     <div class="text-[10px] text-gray-500 tech-font tracking-widest">BATTLE_SYS</div>
                 </div>
             </div>
 
-            <!-- Opponent Hand (Hidden cards using YUGEN image) -->
+            <!-- Opponent Hand -->
             <div class="flex justify-center gap-2 absolute top-2 right-4 scale-75 origin-top-right z-10">
                 <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
                 <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
                 <div class="w-12 h-16 border border-gray-600 rounded shadow-md bg-cover bg-center" style="background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');"></div>
             </div>
 
-            <!-- OPPONENT DECK (STOCK) -->
+            <!-- OPPONENT DECK -->
             <div class="absolute top-24 right-8 z-10 flex flex-col items-center opacity-80">
                 <div class="text-[10px] text-gray-500 mb-2 tracking-widest">STOCK</div>
                 <div class="relative w-[70px] h-[100px]">
@@ -334,27 +203,27 @@
 
             <!-- BATTLEFIELD GRID -->
             <div class="flex-1 flex flex-col justify-center gap-8 relative z-20">
-                <!-- Center Decoration Line -->
+                <!-- Center Line -->
                 <div class="absolute top-1/2 left-0 w-full h-px bg-gray-800 -translate-y-1/2 z-0 flex justify-center items-center">
-                    <div class="bg-[#0f0f13] px-4"><i class="fa-regular fa-compass text-gray-700 text-2xl"></i></div>
+                    <div class="bg-[#0f0f13] px-4"><img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/brush.svg" class="w-12 opacity-30"></div>
                 </div>
 
                 <!-- Opponent Slots -->
                 <div class="flex justify-center gap-4 z-10" id="opp-slots">
-                    <div class="slot-container empty-slot opp-slot" data-index="0"></div>
-                    <div class="slot-container empty-slot opp-slot" data-index="1"></div>
-                    <div class="slot-container empty-slot opp-slot" data-index="2"></div>
-                    <div class="slot-container empty-slot opp-slot" data-index="3"></div>
-                    <div class="slot-container empty-slot opp-slot" data-index="4"></div>
+                    <div class="slot-container opp-slot" data-index="0"><div class="empty-slot w-full h-full"></div></div>
+                    <div class="slot-container opp-slot" data-index="1"><div class="empty-slot w-full h-full"></div></div>
+                    <div class="slot-container opp-slot" data-index="2"><div class="empty-slot w-full h-full"></div></div>
+                    <div class="slot-container opp-slot" data-index="3"><div class="empty-slot w-full h-full"></div></div>
+                    <div class="slot-container opp-slot" data-index="4"><div class="empty-slot w-full h-full"></div></div>
                 </div>
                 
                 <!-- Player Slots -->
                 <div class="flex justify-center gap-4 z-10" id="player-slots">
-                    <div class="slot-container empty-slot player-slot" data-index="0" onclick="playCardToSlot(0)"></div>
-                    <div class="slot-container empty-slot player-slot" data-index="1" onclick="playCardToSlot(1)"></div>
-                    <div class="slot-container empty-slot player-slot" data-index="2" onclick="playCardToSlot(2)"></div>
-                    <div class="slot-container empty-slot player-slot" data-index="3" onclick="playCardToSlot(3)"></div>
-                    <div class="slot-container empty-slot player-slot" data-index="4" onclick="playCardToSlot(4)"></div>
+                    <div class="slot-container player-slot cursor-pointer" data-index="0" onclick="playCardToSlot(0)"><div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div></div>
+                    <div class="slot-container player-slot cursor-pointer" data-index="1" onclick="playCardToSlot(1)"><div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div></div>
+                    <div class="slot-container player-slot cursor-pointer" data-index="2" onclick="playCardToSlot(2)"><div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div></div>
+                    <div class="slot-container player-slot cursor-pointer" data-index="3" onclick="playCardToSlot(3)"><div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div></div>
+                    <div class="slot-container player-slot cursor-pointer" data-index="4" onclick="playCardToSlot(4)"><div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div></div>
                 </div>
             </div>
 
@@ -371,7 +240,7 @@
                 </button>
             </div>
 
-            <!-- PLAYER DECK (STOCK) -->
+            <!-- PLAYER DECK -->
             <div class="absolute bottom-24 left-8 z-10 flex flex-col items-center">
                 <div class="relative w-[70px] h-[100px] cursor-pointer group">
                     <div class="absolute top-2 left-2 w-full h-full border border-gray-600 bg-[#111] rounded"></div>
@@ -383,14 +252,12 @@
                 <div class="text-[10px] text-gray-500 mt-2 tracking-widest">STOCK</div>
             </div>
 
-            <!-- Status Message -->
             <div id="status-msg" class="absolute bottom-40 left-1/2 -translate-x-1/2 text-white font-bold tracking-widest text-sm px-6 py-2 bg-black/80 border border-gray-700 rounded shadow-lg z-50 pointer-events-none opacity-0 transition-opacity duration-300">
-                Pilih kartu dari tangan!
+                Deploy your units!
             </div>
 
-            <!-- PLAYER AREA (Bottom) -->
+            <!-- PLAYER AREA -->
             <div id="player-area" class="w-full flex justify-between items-end mt-4 z-30">
-                <!-- Status/Log -->
                 <div class="w-64">
                     <div class="text-[10px] text-gray-500 tech-font tracking-widest mb-1">SYSTEM_LOG</div>
                     <div id="game-log" class="text-xs text-gray-300 bg-black/50 p-2 border-l-2 border-red-500 h-16 overflow-y-auto tech-font">
@@ -398,138 +265,212 @@
                     </div>
                 </div>
 
-                <!-- Player Hand -->
-                <div class="flex gap-3 justify-center" id="player-hand">
-                    <!-- JS generated cards -->
-                </div>
+                <div class="flex gap-3 justify-center" id="player-hand"></div>
 
-                <!-- Player Info -->
                 <div class="flex items-end gap-4">
                     <div class="flex flex-col gap-1 w-64 items-end">
                         <div class="flex justify-between items-end w-full">
                             <span class="text-lg font-bold text-red-500 tech-font" id="player-life-text">20</span>
                             <span class="text-xs text-gray-500 tech-font tracking-widest"><span id="player-name" class="text-white">PLAYER</span> // LEADER</span>
                         </div>
-                        <div class="barcode-health flex-row-reverse w-full" id="player-health-bar">
-                            <!-- JS generates segments -->
-                        </div>
+                        <div class="barcode-health flex-row-reverse w-full" id="player-health-bar"></div>
                     </div>
-                    <div class="w-20 h-24 border-2 border-gray-600 bg-black overflow-hidden relative transition-all duration-300 hover:border-red-500 hover:shadow-[0_0_15px_rgba(255,51,51,0.8)] cursor-pointer">
-                        <img id="player-portrait" src="" class="w-full h-full object-cover opacity-80">
+                    <div class="w-20 h-24 border border-gray-600 bg-black overflow-hidden relative group hover:border-red-500 transition-colors duration-300 hover:shadow-[0_0_15px_rgba(255,0,0,0.6)]">
+                        <img id="player-portrait" src="" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500">
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // Game Constants & Data
-        const MAX_LIFE = 20;
-        const HAND_SIZE = 4;
-        const TOTAL_DECK_CARDS = 25;
-        
+        // Constants & DB
+        const MAX_LIFE = 20; const HAND_SIZE = 4; const TOTAL_DECK_CARDS = 25;
         const ELEMENTS = {
-            FIRE: { icon: 'fa-fire', color: 'text-orange-500' },
-            WATER: { icon: 'fa-droplet', color: 'text-blue-500' },
-            WIND: { icon: 'fa-wind', color: 'text-green-400' },
-            EARTH: { icon: 'fa-gem', color: 'text-amber-600' },
-            LIGHT: { icon: 'fa-star', color: 'text-yellow-300' },
-            DARK: { icon: 'fa-moon', color: 'text-purple-500' },
+            FIRE: { icon: 'fa-fire', color: 'text-orange-500' }, WATER: { icon: 'fa-droplet', color: 'text-blue-500' },
+            WIND: { icon: 'fa-wind', color: 'text-green-400' }, EARTH: { icon: 'fa-gem', color: 'text-amber-600' },
+            LIGHT: { icon: 'fa-star', color: 'text-yellow-300' }, DARK: { icon: 'fa-moon', color: 'text-purple-500' },
             VOID: { icon: 'fa-circle', color: 'text-gray-400' }
         };
 
-        const CHARACTERS = {
-            'ARAGAMI': 'https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Aragami.png',
-            'EIGETSU': 'https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Eigetsu.png',
-            'HAKUREI': 'https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Hakurei.png',
-            'KOKUYO': 'https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Kokuyo.png',
-            'MUKU': 'https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/Muku.png'
-        };
+        const CHARACTERS = [
+            { name: "Aragami", element: "FIRE / DARK" },
+            { name: "Eigetsu", element: "WATER / LIGHT" },
+            { name: "Hakurei", element: "WIND / LIGHT" },
+            { name: "Kokuyo",  element: "FIRE / DARK" },
+            { name: "Muku",    element: "EARTH / VOID" }
+        ];
 
         const CARD_DB = [
-            { name: "Flame Spirit", element: "FIRE", atk: 3, hp: 3 },
-            { name: "Water Maiden", element: "WATER", atk: 2, hp: 4 },
-            { name: "Wind Samurai", element: "WIND", atk: 4, hp: 2 },
-            { name: "Earth Golem", element: "EARTH", atk: 1, hp: 6 },
-            { name: "Light Guide", element: "LIGHT", atk: 3, hp: 4 },
-            { name: "Dark Avatar", element: "DARK", atk: 5, hp: 1 },
-            { name: "Void Servant", element: "VOID", atk: 2, hp: 2 },
-            { name: "Inferno", element: "FIRE", atk: 4, hp: 3 },
+            { name: "Flame Spirit", element: "FIRE", atk: 3, hp: 3 }, { name: "Water Maiden", element: "WATER", atk: 2, hp: 4 },
+            { name: "Wind Samurai", element: "WIND", atk: 4, hp: 2 }, { name: "Earth Golem", element: "EARTH", atk: 1, hp: 6 },
+            { name: "Light Guide", element: "LIGHT", atk: 3, hp: 4 }, { name: "Dark Avatar", element: "DARK", atk: 5, hp: 1 },
+            { name: "Void Servant", element: "VOID", atk: 2, hp: 2 }, { name: "Inferno", element: "FIRE", atk: 4, hp: 3 },
             { name: "Tsunami", element: "WATER", atk: 3, hp: 5 }
         ];
 
-        // Game State
-        let state = {
-            turn: 1,
-            phase: 'DEPLOY', // DEPLOY -> ACT -> ENEMY_TURN
-            player: {
-                id: '',
-                life: MAX_LIFE,
-                maxLife: MAX_LIFE,
-                deck: [],
-                hand: [],
-                board: [null, null, null, null, null]
-            },
-            enemy: {
-                id: 'CPU',
-                life: MAX_LIFE,
-                maxLife: MAX_LIFE,
-                deckCount: TOTAL_DECK_CARDS,
-                board: [null, null, null, null, null]
-            },
-            selectedCardIndex: null
-        };
-
-        // Utility: Wait
+        let state = { turn: 1, phase: 'DEPLOY', player: { id: '', life: MAX_LIFE, deck: [], hand: [], board: [null, null, null, null, null] }, enemy: { id: 'CPU', life: MAX_LIFE, deckCount: TOTAL_DECK_CARDS, board: [null, null, null, null, null] }, selectedCardIndex: null };
         const delay = ms => new Promise(res => setTimeout(res, ms));
 
-        function previewChar(charId) {
-            const preview = document.getElementById('char-figure-preview');
-            // Ubah format string untuk disesuaikan dengan nama file figur (contoh: ARAGAMI -> Aragami)
-            const formattedName = charId.charAt(0).toUpperCase() + charId.slice(1).toLowerCase();
-            preview.src = `https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${formattedName}_figur.png`;
-            preview.classList.remove('opacity-0', '-translate-x-24');
-            preview.classList.add('opacity-100', 'translate-x-12'); // Meluncur ke kanan
+        // Background Matrix Setup
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
+        
+        class MatrixChar {
+            constructor() {
+                this.reset();
+                this.opacity = 0;
+                this.state = 'fade-in';
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.char = katakana.charAt(Math.floor(Math.random() * katakana.length));
+                this.opacity = 0;
+                this.maxOpacity = (Math.random() * 0.4) + 0.1; // 0.1 to 0.5 trans
+                this.state = 'wait';
+                this.waitTimer = Math.random() * 200; // wait before spawning
+            }
+
+            draw() {
+                if (this.state === 'wait') {
+                    this.waitTimer--;
+                    if (this.waitTimer <= 0) this.state = 'fade-in';
+                    return;
+                }
+
+                if (this.state === 'fade-in') {
+                    this.opacity += 0.02;
+                    if (this.opacity >= this.maxOpacity) this.state = 'fade-out';
+                } else if (this.state === 'fade-out') {
+                    this.opacity -= 0.005;
+                    if (this.opacity <= 0) this.reset();
+                }
+
+                ctx.fillStyle = `rgba(255, 0, 0, ${this.opacity})`;
+                ctx.font = '64px "Noto Sans JP"';
+                ctx.fillText(this.char, this.x, this.y);
+            }
         }
 
-        function clearPreview() {
-            const preview = document.getElementById('char-figure-preview');
-            preview.classList.remove('opacity-100', 'translate-x-12');
-            preview.classList.add('opacity-0', '-translate-x-24'); // Kembali sembunyi
+        const mChars = [];
+        for(let i = 0; i < 12; i++) mChars.push(new MatrixChar());
+
+        let matrixAnimFrame;
+        function renderMatrix() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            mChars.forEach(c => c.draw());
+            matrixAnimFrame = requestAnimationFrame(renderMatrix);
+        }
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        function startExperience() {
+            // Memulai musik background MP3
+            const bgm = document.getElementById('bgm-player');
+            bgm.volume = 0.5; // Atur volume
+            bgm.play().catch(e => console.log("Gagal memutar audio, cek perizinan browser:", e));
+
+            // Start matrix effect
+            renderMatrix();
+
+            // Hilangkan layar hitam pre-landing
+            const preScreen = document.getElementById('screen-pre-landing');
+            preScreen.style.opacity = '0';
+            
+            // Trigger animasi brush di landing page agar berjalan sesaat setelah masuk
+            const landingLogo = document.getElementById('landing-logo');
+            landingLogo.classList.remove('anim-brush');
+            void landingLogo.offsetWidth; // trigger reflow
+            
+            setTimeout(() => {
+                preScreen.style.display = 'none';
+                landingLogo.classList.add('anim-brush');
+            }, 1000);
+        }
+
+        function buildCharSelect() {
+            const grid = document.getElementById('char-select-grid');
+            grid.innerHTML = '';
+            
+            CHARACTERS.forEach(c => {
+                grid.innerHTML += `
+                    <div class="cursor-pointer group flex flex-col items-center" 
+                         onclick="startGame('${c.name}')" 
+                         onmouseenter="showFigur('${c.name}')" 
+                         onmouseleave="hideFigur()">
+                        <div class="w-32 md:w-40 h-48 md:h-56 border-2 border-gray-700 bg-[#1a1a24] overflow-hidden relative group-hover:border-red-500 group-hover:shadow-[0_0_20px_rgba(255,0,0,0.8)] transition-all duration-300">
+                            <img src="https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${c.name}.png" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                            <div class="absolute bottom-0 w-full bg-black/80 p-2 md:p-3 border-t border-gray-700 group-hover:border-red-500">
+                                <p class="font-bold tracking-widest text-xs md:text-sm text-center">${c.name.toUpperCase()}</p>
+                                <p class="text-[10px] md:text-xs text-red-400 tech-font text-center">${c.element}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function showFigur(name) {
+            const container = document.getElementById('char-figur-container');
+            const img = document.getElementById('char-figur-img');
+            
+            img.src = `https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${name}_figur.png`;
+            
+            // Restart animation
+            img.classList.remove('anim-slide-char');
+            void img.offsetWidth;
+            img.classList.add('anim-slide-char');
+            
+            container.style.display = 'flex';
+        }
+
+        function hideFigur() {
+            document.getElementById('char-figur-container').style.display = 'none';
+        }
+
+        function enterSystem() {
+            buildCharSelect();
+            switchScreen('screen-char-select');
         }
 
         function switchScreen(screenId) {
-            if(screenId === 'screen-game') {
-                document.getElementById('matrix-bg').style.opacity = '0'; // Hide Matrix when game starts
-            }
-            
-            document.getElementById('screen-landing').style.display = 'none';
-            document.getElementById('screen-char-select').style.display = 'none';
-            document.getElementById('screen-game').style.display = 'none';
+            ['screen-landing', 'screen-char-select', 'screen-game'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
             
             const target = document.getElementById(screenId);
             target.style.display = 'flex';
             target.style.opacity = 0;
-            setTimeout(() => {
-                target.style.transition = 'opacity 0.5s';
-                target.style.opacity = 1;
-            }, 50);
+            setTimeout(() => { target.style.transition = 'opacity 0.5s'; target.style.opacity = 1; }, 50);
+
+            // Cleanup matrix when entering game
+            if (screenId === 'screen-game') {
+                document.getElementById('matrix-canvas').style.opacity = 0;
+                document.getElementById('global-bg').style.opacity = 0;
+            }
         }
 
         function startGame(charId) {
             state.player.id = charId;
-            document.getElementById('player-name').innerText = charId;
-            document.getElementById('player-portrait').src = CHARACTERS[charId];
+            document.getElementById('player-name').innerText = charId.toUpperCase();
+            document.getElementById('player-portrait').src = `https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${charId}.png`;
             
-            // Randomly select opponent bot
-            const bots = ['ARAGAMI', 'EIGETSU', 'HAKUREI', 'KOKUYO', 'MUKU'];
-            let botId = bots[Math.floor(Math.random() * bots.length)];
-            while(botId === charId) botId = bots[Math.floor(Math.random() * bots.length)];
+            // Random enemy (not same as player)
+            let enemyList = CHARACTERS.filter(c => c.name !== charId);
+            let eChar = enemyList[Math.floor(Math.random() * enemyList.length)];
             
-            state.enemy.id = botId;
-            document.getElementById('opp-name').innerText = state.enemy.id;
-            document.getElementById('opp-portrait').src = CHARACTERS[state.enemy.id];
+            state.enemy.id = eChar.name;
+            document.getElementById('opp-name').innerText = eChar.name.toUpperCase();
+            document.getElementById('opp-portrait').src = `https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/${eChar.name}.png`;
 
             initGame();
             switchScreen('screen-game');
@@ -545,107 +486,53 @@
         }
 
         function initGame() {
-            state.player.life = MAX_LIFE;
-            state.enemy.life = MAX_LIFE;
-            state.player.deck = createDeck();
-            state.enemy.deckCount = TOTAL_DECK_CARDS;
-            state.player.board = [null, null, null, null, null];
-            state.enemy.board = [null, null, null, null, null];
-            state.turn = 1;
-            state.phase = 'DEPLOY';
-            
-            updateHealthBars();
-            drawInitialCards();
-            updateUI();
+            state.player.life = MAX_LIFE; state.enemy.life = MAX_LIFE;
+            state.player.deck = createDeck(); state.enemy.deckCount = TOTAL_DECK_CARDS;
+            state.player.board = [null, null, null, null, null]; state.enemy.board = [null, null, null, null, null];
+            state.turn = 1; state.phase = 'DEPLOY';
+            updateHealthBars(); drawInitialCards(); updateUI();
         }
 
         function updateHealthBars() {
             document.getElementById('player-life-text').innerText = state.player.life;
             document.getElementById('opp-life-text').innerText = state.enemy.life;
-
-            const pBar = document.getElementById('player-health-bar');
-            const oBar = document.getElementById('opp-health-bar');
-            
+            const pBar = document.getElementById('player-health-bar'); const oBar = document.getElementById('opp-health-bar');
             pBar.innerHTML = ''; oBar.innerHTML = '';
-            
             for(let i=0; i<MAX_LIFE; i++) {
-                const pSeg = document.createElement('div');
-                pSeg.className = `barcode-segment ${i >= state.player.life ? 'empty' : ''}`;
-                pBar.appendChild(pSeg);
-                
-                const oSeg = document.createElement('div');
-                oSeg.className = `barcode-segment ${i >= state.enemy.life ? 'empty' : ''}`;
-                oBar.appendChild(oSeg);
+                pBar.appendChild(Object.assign(document.createElement('div'), {className: `barcode-segment ${i >= state.player.life ? 'empty' : ''}`}));
+                oBar.appendChild(Object.assign(document.createElement('div'), {className: `barcode-segment ${i >= state.enemy.life ? 'empty' : ''}`}));
+            }
+        }
+
+        function drawInitialCards() {
+            state.player.hand = [];
+            for(let i=0; i<HAND_SIZE; i++) if (state.player.deck.length > 0) state.player.hand.push(state.player.deck.pop());
+            state.enemy.deckCount = Math.max(0, state.enemy.deckCount - HAND_SIZE);
+            renderHand(); updateDeckUI();
+        }
+
+        function drawCard() {
+            if(state.player.hand.length < HAND_SIZE + 2 && state.player.deck.length > 0) {
+                state.player.hand.push(state.player.deck.pop()); renderHand(); updateDeckUI();
             }
         }
 
         function updateDeckUI() {
-            const pDeckEl = document.getElementById('player-deck-count');
-            const eDeckEl = document.getElementById('opp-deck-count');
-            if (pDeckEl) pDeckEl.innerText = state.player.deck.length;
-            if (eDeckEl) eDeckEl.innerText = state.enemy.deckCount;
-        }
-
-        async function drawInitialCards() {
-            state.player.hand = [];
-            const handContainer = document.getElementById('player-hand');
-            handContainer.innerHTML = '';
-
-            for(let i=0; i<HAND_SIZE; i++) {
-                if (state.player.deck.length > 0) {
-                    const card = state.player.deck.pop();
-                    state.player.hand.push(card);
-                    
-                    // Render empty slot first, then add html
-                    const wrap = document.createElement('div');
-                    wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300 anim-deal";
-                    wrap.style.animationDelay = `${i * 0.15}s`; // stagger deal animation
-                    
-                    wrap.innerHTML = generateCardHTML(card, 'hand', i, false);
-                    handContainer.appendChild(wrap);
-                    
-                    // Force a reflow and add flip class to simulate drawing from deck face down then flipping
-                    const pCard = wrap.querySelector('.playing-card');
-                    setTimeout(() => { if(pCard) pCard.classList.add('is-flipped'); }, (i * 150) + 400);
-                }
-            }
-            state.enemy.deckCount = Math.max(0, state.enemy.deckCount - HAND_SIZE);
-            updateDeckUI();
-        }
-
-        async function drawSingleCard() {
-            if(state.player.hand.length < HAND_SIZE + 2 && state.player.deck.length > 0) {
-                const card = state.player.deck.pop();
-                const newIndex = state.player.hand.length;
-                state.player.hand.push(card);
-                
-                const handContainer = document.getElementById('player-hand');
-                const wrap = document.createElement('div');
-                wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300 anim-deal";
-                wrap.innerHTML = generateCardHTML(card, 'hand', newIndex, false);
-                handContainer.appendChild(wrap);
-                
-                const pCard = wrap.querySelector('.playing-card');
-                setTimeout(() => { if(pCard) pCard.classList.add('is-flipped'); }, 400);
-
-                updateDeckUI();
-            }
+            const pDeck = document.getElementById('player-deck-count'); if(pDeck) pDeck.innerText = state.player.deck.length;
+            const eDeck = document.getElementById('opp-deck-count'); if(eDeck) eDeck.innerText = state.enemy.deckCount;
         }
 
         function generateCardHTML(card, context = 'hand', index = -1, startFaceDown = false) {
             const elInfo = ELEMENTS[card.element];
             const clickAction = context === 'hand' ? `onclick="selectCardFromHand(${index})"` : '';
-            // If startFaceDown is false, we want it flipped immediately (unless it's in hand dealing sequence where we handle it via JS)
-            const flippedClass = (context === 'board' && !startFaceDown) ? 'is-flipped' : '';
-            
+            const flippedClass = startFaceDown ? '' : 'is-flipped'; // flip active reveals front
+
             return `
-                <div class="playing-card ${flippedClass}" ${clickAction} id="${context}-card-${index}">
-                    <div class="card-face card-face-back"></div>
-                    <div class="card-face card-face-front">
+                <div class="playing-card anim-draw ${context === 'hand' ? 'hover:-translate-y-4' : ''} ${flippedClass}" ${clickAction} id="${context}-card-${index}">
+                    <div class="card-face card-back"></div>
+                    <div class="card-face card-front">
                         <div class="text-center text-[10px] pt-1 font-bold tracking-wider">${card.name}</div>
-                        <div class="card-inner-img">
-                            <i class="fa-solid ${elInfo.icon} ${elInfo.color}"></i>
-                        </div>
+                        <div class="card-inner-img"><i class="fa-solid ${elInfo.icon} ${elInfo.color}"></i></div>
                         <div class="card-stats">
                             <span class="text-red-400"><i class="fa-solid fa-burst text-[10px]"></i> ${card.atk}</span>
                             <span class="text-green-400"><i class="fa-solid fa-shield-heart text-[10px]"></i> ${card.hp}</span>
@@ -653,6 +540,21 @@
                     </div>
                 </div>
             `;
+        }
+
+        function renderHand() {
+            const hc = document.getElementById('player-hand'); hc.innerHTML = '';
+            state.player.hand.forEach((card, index) => { hc.innerHTML += generateCardHTML(card, 'hand', index); });
+        }
+
+        function renderBoard() {
+            for(let i=0; i<5; i++) {
+                const pSlot = document.querySelector(`.player-slot[data-index="${i}"]`);
+                pSlot.innerHTML = state.player.board[i] ? generateCardHTML(state.player.board[i], 'board', i) : '<div class="empty-slot w-full h-full hover:border-red-500 transition-colors"></div>';
+                
+                const eSlot = document.querySelector(`.opp-slot[data-index="${i}"]`);
+                eSlot.innerHTML = state.enemy.board[i] ? generateCardHTML(state.enemy.board[i], 'board', i) : '<div class="empty-slot w-full h-full"></div>';
+            }
         }
 
         function logGame(msg) {
@@ -687,61 +589,32 @@
 
         function selectCardFromHand(index) {
             if(state.phase !== 'DEPLOY') return;
-            
-            // Remove previous selection
-            if(state.selectedCardIndex !== null) {
-                const prev = document.getElementById(`hand-card-${state.selectedCardIndex}`);
-                if(prev) prev.parentElement.classList.remove('selected');
-            }
-            
-            if(state.selectedCardIndex === index) {
-                state.selectedCardIndex = null; // deselect
-                setStatus("Deselected.");
-                return;
-            }
-
+            if(state.selectedCardIndex !== null) document.getElementById(`hand-card-${state.selectedCardIndex}`).classList.remove('selected');
+            if(state.selectedCardIndex === index) { state.selectedCardIndex = null; setStatus("Deselected."); return; }
             state.selectedCardIndex = index;
-            const current = document.getElementById(`hand-card-${index}`);
-            if(current) current.parentElement.classList.add('selected');
-            
+            document.getElementById(`hand-card-${index}`).classList.add('selected');
             setStatus("Select a board slot to deploy.");
-            // Highlight empty player slots
-            document.querySelectorAll('.player-slot.empty-slot').forEach(slot => slot.classList.add('highlight'));
+            document.querySelectorAll('.player-slot .empty-slot').forEach(slot => slot.classList.add('highlight'));
         }
 
-        function playCardToSlot(slotIndex) {
+        async function playCardToSlot(slotIndex) {
             if(state.phase !== 'DEPLOY' || state.selectedCardIndex === null) return;
+            if(state.player.board[slotIndex] !== null) { setStatus("Slot is occupied!"); return; }
             
-            if(state.player.board[slotIndex] !== null) {
-                setStatus("Slot is occupied!");
-                return;
-            }
-
             const card = state.player.hand.splice(state.selectedCardIndex, 1)[0];
             state.player.board[slotIndex] = card;
-            
-            // Re-render hand
-            const handContainer = document.getElementById('player-hand');
-            handContainer.innerHTML = '';
-            state.player.hand.forEach((c, idx) => {
-                const wrap = document.createElement('div');
-                wrap.className = "slot-container hover:-translate-y-4 transition-transform duration-300";
-                wrap.innerHTML = generateCardHTML(c, 'hand', idx, false);
-                handContainer.appendChild(wrap);
-                wrap.querySelector('.playing-card').classList.add('is-flipped'); // Keep hand open
-            });
-
-            // Put card on board with flip animation
-            const slot = document.querySelector(`.player-slot[data-index="${slotIndex}"]`);
-            slot.innerHTML = generateCardHTML(card, 'board', slotIndex, true); // face down initially
-            slot.classList.remove('empty-slot', 'highlight');
-            slot.classList.add('anim-deal'); // fly in
-            
-            const boardCard = slot.querySelector('.playing-card');
-            setTimeout(() => { if(boardCard) boardCard.classList.add('is-flipped'); }, 400); // flip open
-
             state.selectedCardIndex = null;
-            document.querySelectorAll('.player-slot').forEach(s => s.classList.remove('highlight'));
+            document.querySelectorAll('.player-slot .empty-slot').forEach(s => s.classList.remove('highlight'));
+            
+            const pSlot = document.querySelector(`.player-slot[data-index="${slotIndex}"]`);
+            pSlot.innerHTML = generateCardHTML(card, 'board', slotIndex, true); // True = start facedown
+            const cardEl = pSlot.querySelector('.playing-card');
+            
+            renderHand();
+            
+            // Flip animation
+            await delay(400); // wait fly in
+            if(cardEl) cardEl.classList.add('is-flipped');
             logGame(`Deployed ${card.name}.`);
         }
 
@@ -754,7 +627,6 @@
                 overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
                 document.getElementById('opp-portrait').parentElement.classList.add('anim-shake');
             }
-            
             setTimeout(() => {
                 overlay.style.backgroundColor = 'rgba(0,0,0,0)';
                 document.getElementById('player-portrait').parentElement.classList.remove('anim-shake');
@@ -764,158 +636,87 @@
 
         async function startBattlePhase() {
             if (state.phase !== 'DEPLOY') return;
-            state.phase = 'ACT';
-            state.selectedCardIndex = null;
-            updateUI();
-            logGame("BATTLE PHASE START");
-            setStatus("Battle engaged!");
-            await delay(1000);
-            await resolveCombat();
+            state.phase = 'ACT'; state.selectedCardIndex = null;
+            renderHand(); updateUI(); logGame("BATTLE PHASE START"); setStatus("Battle engaged!");
+            await delay(1000); await resolveCombat();
         }
 
         async function resolveCombat() {
             for(let i=0; i<5; i++) {
-                const pCard = state.player.board[i];
-                const eCard = state.enemy.board[i];
-                
+                const pCard = state.player.board[i]; const eCard = state.enemy.board[i];
                 const pSlot = document.querySelector(`.player-slot[data-index="${i}"]`);
                 const eSlot = document.querySelector(`.opp-slot[data-index="${i}"]`);
 
-                // Player attacks
                 if(pCard) {
                     if (pSlot && pSlot.firstElementChild) {
-                        pSlot.firstElementChild.style.animation = 'none';
-                        pSlot.firstElementChild.offsetHeight; /* trigger reflow */
-                        pSlot.firstElementChild.style.animation = 'attackUp 0.5s ease-in-out forwards';
-                    }
-                    await delay(250); // hit point
-                    
-                    if(eCard) {
-                        eCard.hp -= pCard.atk;
-                        logGame(`${pCard.name} hits ${eCard.name} for ${pCard.atk} dmg.`);
-                        if(eSlot && eSlot.firstElementChild) {
-                            eSlot.firstElementChild.classList.add('anim-shake');
-                            setTimeout(() => eSlot.firstElementChild.classList.remove('anim-shake'), 400);
-                        }
-                    } else {
-                        state.enemy.life -= pCard.atk;
-                        logGame(`Direct attack! CPU takes ${pCard.atk} dmg.`);
-                        flashDamage('enemy');
-                    }
-                    updateHealthBars();
-                    
-                    // Update stats visually immediately
-                    if(eCard && eSlot) eSlot.innerHTML = generateCardHTML(eCard, 'board', i, false);
-                    
-                    await delay(350);
-                }
-
-                // Enemy attacks
-                if(eCard && eCard.hp > 0) {
-                    if (eSlot && eSlot.firstElementChild) {
-                        eSlot.firstElementChild.style.animation = 'none';
-                        eSlot.firstElementChild.offsetHeight;
-                        eSlot.firstElementChild.style.animation = 'attackDown 0.5s ease-in-out forwards';
+                        pSlot.firstElementChild.style.animation = 'none'; pSlot.firstElementChild.offsetHeight;
+                        pSlot.firstElementChild.style.animation = 'attackUp 0.5s ease-in-out';
                     }
                     await delay(250);
-                    
-                    if(pCard && pCard.hp > 0) {
-                        pCard.hp -= eCard.atk;
-                        logGame(`${eCard.name} counters ${pCard.name} for ${eCard.atk} dmg.`);
-                        if(pSlot && pSlot.firstElementChild) {
-                            pSlot.firstElementChild.classList.add('anim-shake');
-                            setTimeout(() => pSlot.firstElementChild.classList.remove('anim-shake'), 400);
-                        }
+                    if(eCard) {
+                        eCard.hp -= pCard.atk; logGame(`${pCard.name} hits ${eCard.name} for ${pCard.atk} dmg.`);
+                        if(eSlot && eSlot.firstElementChild) eSlot.firstElementChild.classList.add('anim-shake');
                     } else {
-                        state.player.life -= eCard.atk;
-                        logGame(`CPU direct attack! You take ${eCard.atk} dmg.`);
-                        flashDamage('player');
+                        state.enemy.life -= pCard.atk; logGame(`Direct attack! CPU takes ${pCard.atk} dmg.`); flashDamage('enemy');
                     }
-                    updateHealthBars();
-                    
-                    if(pCard && pSlot) pSlot.innerHTML = generateCardHTML(pCard, 'board', i, false);
-                    
-                    await delay(350);
+                    updateHealthBars(); await delay(350);
                 }
 
-                // Remove dead cards
-                if(pCard && pCard.hp <= 0) {
-                    state.player.board[i] = null;
-                    if(pSlot) {
-                        pSlot.innerHTML = '';
-                        pSlot.className = 'slot-container empty-slot player-slot';
+                if(eCard && eCard.hp > 0) {
+                    if (eSlot && eSlot.firstElementChild) {
+                        eSlot.firstElementChild.style.animation = 'none'; eSlot.firstElementChild.offsetHeight;
+                        eSlot.firstElementChild.style.animation = 'attackDown 0.5s ease-in-out';
                     }
-                }
-                if(eCard && eCard.hp <= 0) {
-                    state.enemy.board[i] = null;
-                    if(eSlot) {
-                        eSlot.innerHTML = '';
-                        eSlot.className = 'slot-container empty-slot opp-slot';
+                    await delay(250);
+                    if(pCard && pCard.hp > 0) {
+                        pCard.hp -= eCard.atk; logGame(`${eCard.name} counters ${pCard.name} for ${eCard.atk} dmg.`);
+                        if(pSlot && pSlot.firstElementChild) pSlot.firstElementChild.classList.add('anim-shake');
+                    } else {
+                        state.player.life -= eCard.atk; logGame(`CPU direct attack! You take ${eCard.atk} dmg.`); flashDamage('player');
                     }
+                    updateHealthBars(); await delay(350);
                 }
+
+                if(pCard && pCard.hp <= 0) state.player.board[i] = null;
+                if(eCard && eCard.hp <= 0) state.enemy.board[i] = null;
                 
+                renderBoard();
                 if(state.player.life <= 0 || state.enemy.life <= 0) break;
             }
 
             await delay(1000);
-            
-            if(state.player.life <= 0) {
-                gameOver("DEFEAT");
-            } else if (state.enemy.life <= 0) {
-                gameOver("VICTORY");
-            } else {
-                startEnemyTurn();
-            }
+            if(state.player.life <= 0) gameOver("DEFEAT"); else if (state.enemy.life <= 0) gameOver("VICTORY"); else startEnemyTurn();
         }
 
         async function startEnemyTurn() {
-            state.phase = 'ENEMY_TURN';
-            updateUI();
-            setStatus("Enemy is thinking...");
-            await delay(1000);
+            state.phase = 'ENEMY_TURN'; updateUI(); setStatus("Enemy is thinking..."); await delay(1500);
 
-            let emptyEnemySlots = [];
-            for(let i=0; i<5; i++) {
-                if(!state.enemy.board[i]) emptyEnemySlots.push(i);
-            }
+            let emptyEnemySlots = []; for(let i=0; i<5; i++) if(!state.enemy.board[i]) emptyEnemySlots.push(i);
             emptyEnemySlots.sort(() => Math.random() - 0.5);
             
             const cardsToPlay = Math.min(2, emptyEnemySlots.length);
             for(let i=0; i<cardsToPlay; i++) {
                 if(state.enemy.deckCount <= 0) break;
-                
                 const slotIndex = emptyEnemySlots[i];
-                const randIndex = Math.floor(Math.random() * CARD_DB.length);
-                const enemyCard = { ...CARD_DB[randIndex] };
+                const enemyCard = { ...CARD_DB[Math.floor(Math.random() * CARD_DB.length)] };
                 
-                state.enemy.board[slotIndex] = enemyCard;
-                state.enemy.deckCount--;
+                state.enemy.board[slotIndex] = enemyCard; state.enemy.deckCount--;
                 
-                // Deal & Flip animation for CPU
                 const eSlot = document.querySelector(`.opp-slot[data-index="${slotIndex}"]`);
-                eSlot.innerHTML = generateCardHTML(enemyCard, 'board', slotIndex, true); // true = start face down
+                eSlot.innerHTML = generateCardHTML(enemyCard, 'board', slotIndex, true); 
                 eSlot.className = 'slot-container opp-slot';
-                eSlot.classList.add('anim-deal-enemy');
                 
                 const eCardEl = eSlot.querySelector('.playing-card');
                 updateDeckUI();
                 
-                await delay(400); // Wait for fly-in animation
-                if (eCardEl) eCardEl.classList.add('is-flipped'); // Flip open safely
-                await delay(400); // brief pause before next action
+                await delay(400);
+                if (eCardEl) eCardEl.classList.add('is-flipped');
+                await delay(400);
             }
 
-            setStatus("Enemy phase ended.");
-            await delay(500);
-
-            // Start new turn
-            state.turn++;
-            if(state.enemy.deckCount > 0) state.enemy.deckCount--; // simulate opponent draw
-            drawSingleCard();
-            
-            state.phase = 'DEPLOY';
-            updateUI();
-            updateDeckUI();
+            setStatus("Enemy phase ended."); await delay(1000);
+            state.turn++; if(state.enemy.deckCount > 0) state.enemy.deckCount--;
+            drawCard(); state.phase = 'DEPLOY'; updateUI(); updateDeckUI();
         }
 
         function gameOver(result) {
@@ -930,87 +731,6 @@
             `;
             document.body.appendChild(overlay);
         }
-
-        // --- MATRIX BACKGROUND SCRIPT ---
-        const matrixCanvas = document.getElementById('matrix-bg');
-        const ctx = matrixCanvas.getContext('2d');
-        
-        function resizeCanvas() {
-            matrixCanvas.width = window.innerWidth;
-            matrixCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
-        const fontSize = 64; // Huruf Besar & Diperbesar
-        
-        class MatrixChar {
-            constructor() {
-                this.reset(true); 
-            }
-            reset(randomStart = false) {
-                // Koordinat acak di seluruh layar
-                this.x = Math.random() * (matrixCanvas.width - fontSize);
-                this.y = Math.random() * (matrixCanvas.height - fontSize) + fontSize;
-                
-                // Huruf acak
-                this.char = katakana.charAt(Math.floor(Math.random() * katakana.length));
-                
-                // Transparansi dan kecepatan pudar
-                this.opacity = randomStart ? Math.random() * 0.4 : 0;
-                this.fadeSpeed = Math.random() * 0.01 + 0.005; // Kecepatan muncul/hilangnya huruf
-                this.maxOpacity = Math.random() * 0.3 + 0.15; // Tidak terlalu tebal (0.15 - 0.45 opacity)
-                
-                // Status awal (FADE_IN, FADE_OUT, atau WAIT)
-                this.state = randomStart && Math.random() > 0.5 ? 'FADE_OUT' : 'FADE_IN';
-                this.delay = Math.floor(Math.random() * 150) + 50; // Jeda (jarang) sebelum respawn di tempat baru
-            }
-            update() {
-                if (this.state === 'FADE_IN') {
-                    this.opacity += this.fadeSpeed;
-                    if (this.opacity >= this.maxOpacity) {
-                        this.state = 'FADE_OUT';
-                    }
-                } else if (this.state === 'FADE_OUT') {
-                    this.opacity -= this.fadeSpeed;
-                    if (this.opacity <= 0) {
-                        this.opacity = 0;
-                        this.state = 'WAIT';
-                    }
-                } else if (this.state === 'WAIT') {
-                    this.delay--;
-                    if (this.delay <= 0) {
-                        this.reset(); // Muncul lagi di posisi baru
-                    }
-                }
-            }
-            draw() {
-                if (this.opacity > 0) {
-                    ctx.fillStyle = `rgba(255, 0, 0, ${this.opacity})`;
-                    ctx.font = 'bold ' + fontSize + 'px monospace';
-                    ctx.fillText(this.char, this.x, this.y);
-                }
-            }
-        }
-
-        // Jumlah huruf yang muncul di layar dalam satu waktu dibuat sedikit (12 huruf) agar terkesan jarang dan estetik
-        const charCount = 12; 
-        let matrixChars = [];
-        for(let i=0; i<charCount; i++) {
-            matrixChars.push(new MatrixChar());
-        }
-
-        function drawMatrix() {
-            ctx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-            matrixChars.forEach(c => {
-                c.update();
-                c.draw();
-            });
-            requestAnimationFrame(drawMatrix);
-        }
-        drawMatrix();
-
     </script>
 </body>
 </html>
