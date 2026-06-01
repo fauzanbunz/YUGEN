@@ -27,34 +27,18 @@
             width: 90px; height: 130px; background-color: #1a1a24; border: 1px solid #444; border-radius: 4px;
             position: relative; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
             display: flex; flex-direction: column; overflow: hidden;
-            /* Added for 3D flip */
-            transform-style: preserve-3d;
-            perspective: 1000px;
         }
         
-        .playing-card:not(.is-flipped):hover { translate: 0 -10px; border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); }
+        .playing-card:hover { translate: 0 -10px; border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); }
         .playing-card.selected { border-color: #ff3333; box-shadow: 0 0 20px rgba(255, 51, 51, 0.8); translate: 0 -15px; }
         
-        /* 3D Flip Faces */
-        .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column;
-        }
-        
-        .card-front {
-            background-color: #1a1a24;
-            transform: rotateY(180deg); /* Flipped by default */
-        }
-        
-        .card-back {
+        .card-hidden {
             background-color: #111;
             background-image: url('https://raw.githubusercontent.com/fauzanbunz/YUGEN/main/card%20yugen.png');
             background-size: cover;
             background-position: center;
             border: 1px solid #555;
         }
-        
-        /* Class to trigger flip */
-        .is-flipped { transform: rotateY(180deg); }
 
         .empty-slot {
             width: 90px; height: 130px; border: 1px dashed #555; background-color: rgba(255,255,255,0.02);
@@ -523,21 +507,21 @@
             const eDeck = document.getElementById('opp-deck-count'); if(eDeck) eDeck.innerText = state.enemy.deckCount;
         }
 
-        function generateCardHTML(card, context = 'hand', index = -1, startFaceDown = false) {
-            const elInfo = ELEMENTS[card.element];
+        function generateCardHTML(card, context = 'hand', index = -1, isHidden = false) {
             const clickAction = context === 'hand' ? `onclick="selectCardFromHand(${index})"` : '';
-            const flippedClass = startFaceDown ? '' : 'is-flipped'; // flip active reveals front
+            
+            if (isHidden) {
+                return `<div class="playing-card card-hidden anim-draw" ${clickAction} id="${context}-card-${index}"></div>`;
+            }
 
+            const elInfo = ELEMENTS[card.element];
             return `
-                <div class="playing-card anim-draw ${flippedClass}" ${clickAction} id="${context}-card-${index}">
-                    <div class="card-face card-back"></div>
-                    <div class="card-face card-front">
-                        <div class="text-center text-[10px] pt-1 font-bold tracking-wider">${card.name}</div>
-                        <div class="card-inner-img"><i class="fa-solid ${elInfo.icon} ${elInfo.color}"></i></div>
-                        <div class="card-stats">
-                            <span class="text-red-400"><i class="fa-solid fa-burst text-[10px]"></i> ${card.atk}</span>
-                            <span class="text-green-400"><i class="fa-solid fa-shield-heart text-[10px]"></i> ${card.hp}</span>
-                        </div>
+                <div class="playing-card anim-draw" ${clickAction} id="${context}-card-${index}">
+                    <div class="text-center text-[10px] pt-1 font-bold tracking-wider">${card.name}</div>
+                    <div class="card-inner-img"><i class="fa-solid ${elInfo.icon} ${elInfo.color}"></i></div>
+                    <div class="card-stats">
+                        <span class="text-red-400"><i class="fa-solid fa-burst text-[10px]"></i> ${card.atk}</span>
+                        <span class="text-green-400"><i class="fa-solid fa-shield-heart text-[10px]"></i> ${card.hp}</span>
                     </div>
                 </div>
             `;
@@ -607,15 +591,9 @@
             state.selectedCardIndex = null;
             document.querySelectorAll('.player-slot .empty-slot').forEach(s => s.classList.remove('highlight'));
             
-            const pSlot = document.querySelector(`.player-slot[data-index="${slotIndex}"]`);
-            pSlot.innerHTML = generateCardHTML(card, 'board', slotIndex, true); // True = start facedown
-            const cardEl = pSlot.querySelector('.playing-card');
-            
             renderHand();
+            renderBoard();
             
-            // Flip animation
-            await delay(400); // wait fly in
-            if(cardEl) cardEl.classList.add('is-flipped');
             logGame(`Deployed ${card.name}.`);
         }
 
@@ -703,16 +681,10 @@
                 
                 state.enemy.board[slotIndex] = enemyCard; state.enemy.deckCount--;
                 
-                const eSlot = document.querySelector(`.opp-slot[data-index="${slotIndex}"]`);
-                eSlot.innerHTML = generateCardHTML(enemyCard, 'board', slotIndex, true); 
-                eSlot.className = 'slot-container opp-slot';
-                
-                const eCardEl = eSlot.querySelector('.playing-card');
                 updateDeckUI();
+                renderBoard();
                 
-                await delay(400);
-                if (eCardEl) eCardEl.classList.add('is-flipped');
-                await delay(400);
+                await delay(800);
             }
 
             setStatus("Enemy phase ended."); await delay(1000);
